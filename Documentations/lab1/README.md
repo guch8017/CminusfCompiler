@@ -18,7 +18,7 @@
 
 在本次实验中我们讲重点用到`FLEX`和以`C-`为基础改编的`cminus-f`语言。这里对其进行简单介绍。
 
-### 0.1 C - (with float)词法
+### 0.1 cminus-f词法
 
 `C MINUS`是C语言的一个子集，该语言的语法在《编译原理与实践》第九章附录中有详细的介绍。而`cminus-f`则是在`C MINUS`上追加了浮点操作。
 
@@ -127,10 +127,11 @@ int     280     1       2       5
 a       284     1       6       7
 ;       270     1       7       8
 ```
+**具体的需识别token参考[lexical_analyzer.h](./include/lexical_analyzer.h)**
 
 **特别说明对于部分token，我们只需要进行过滤，即只需被识别，但是不应该被输出到分析结果中。因为这些token对程序运行不起到任何作用。**
 
-注意，你所需修改的文件应仅有[lexical_analyer.l](./src/lexer/lexical_analyzer.l)。关于`FLEX`用法上文已经进行简短的介绍，更高阶的用法请参考百度、谷歌和官方说明。
+> 注意，你所需修改的文件应仅有[lexical_analyer.l](./src/lexer/lexical_analyzer.l)。关于`FLEX`用法上文已经进行简短的介绍，更高阶的用法请参考百度、谷歌和官方说明。
 
 ### 1.1 目录结构
 
@@ -258,9 +259,9 @@ a       284     1       6       7
 
 * 迟交规定
 
-  * `Soft Deadline` : 2020.10.09 23:59  
+  * `Soft Deadline` : 2020.10.12 23:59  
 
-  * `Hard Deadline` : before 2020.10.15 23:59
+  * `Hard Deadline` : before 2020.10.19 23:59
 
   * 补交请邮件提醒TA：  
 
