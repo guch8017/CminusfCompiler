@@ -29,8 +29,8 @@
 
 /// \brief analysize a *.cminus file
 ///
-///	\param input_file
-/// \param token stream
+///	\param input_file, 需要分析的文件路径
+/// \param token stream, Token_Node结构体数组，用于存储分析结果，具体定义参考lexical_analyer.h
 
 void analyzer(char* input_file, Token_Node* token_stream){
 	if(!(yyin = fopen(input_file,"r"))){
