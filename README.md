@@ -5,5 +5,16 @@
 *   [lab1](./Documentations/lab1/README.md)
     *   DDL : 2020/10/12, 23:59:59
 
-
-
+### FAQ: How to merge upperstream remote branches
+In brief, you need another alias for upstream repository (we assume you are now in your local copy of forked repository on Gitlab):
+```
+(shell) $ git remote add upstream git@210.45.114.30:staff/2020fall-compiler_cminus.git
+```
+Then try to merge remote commits to your local repository:
+```
+(shell) $ git pull upstream master
+```
+Then synchronize changes to your forked remote repository:
+```
+(shell) $ git push origin master
+```
