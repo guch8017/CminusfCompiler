@@ -17,7 +17,37 @@
  /******************TODO*********************/
  /****请在此补全所有flex的模式与动作  start******/
  //STUDENT TO DO
+"/*"([^\*]|(\*)*[^\*/])*(\*)*"*/" {return COMMENT;}
+\"\" {return LETTER;}
 
+\+ {return ADD;}
+\- {return SUB;}
+\* {return MUL;}
+\/ {return DIV;}
+\< {return LT;}
+\<\= {return LTE;}
+\> {return GT;}
+\>\= {return GTE;}
+\=\= {return EQ;}
+\!\= {return NEQ;}
+\= {return ASSIGN;}
+
+\; {return SEMICOLON;}
+\, {return COMMA;}
+\( {return LPARENTHESE;}
+\) {return RPARENTHESE;}
+\[ {return LBRACKET;}
+\] {return RBRACKET;}
+\{ {return LBRACE;}
+\} {return RBRACE;}
+
+[_a-zA-Z][_a-zA-Z0-9]* {return IDENTIFIER;}
+[0-9]+\.[0-9]* {return FLOATPOINT;}
+[0-9]+ {return INTEGER;}
+\[\] {return ARRAY;}
+[a-zA-Z]+ {return LETTER;}
+\n {return EOL;}
+[ \t]+ {return BLANK;}
 . {return ERROR;} 
 
 
@@ -26,6 +56,7 @@
  /****请在此补全所有flex的模式与动作  end******/
 %%
 /****************C代码 start*************/
+
 
 /// \brief analysize a *.cminus file
 ///
@@ -41,24 +72,54 @@ void analyzer(char* input_file, Token_Node* token_stream){
 
 	int token;
 	int index = 0;
-
+	lines = 1;
+	pos_start = 0;
+	pos_end = 1;
 	while(token = yylex()){
 		switch(token){
 			case COMMENT: 
-				//STUDENT TO DO
+				for(int i = 0; i < strlen(yytext); ++i){
+					if(yytext[i] == '\n'){
+						lines += 1;
+						pos_start = 0;
+						pos_end = 1;
+					}else{
+						pos_end += 1;
+					}
+				}
+				break;
 			case BLANK:
-				//STUDENT TO DO	
+				pos_end += strlen(yytext);
 				break;
 			case EOL:
-				//STUDENT TO DO
+				lines += 1;
+				pos_start = 0;
+				pos_end = 1;
 				break;
 			case ERROR:
-				printf("[ERR]: unable to analysize %s at %d line, from %d to %d\n", yytext, lines, pos_start, pos_end);
+				printf("[ERR]: unable to analysize \"%s\" at %d line, from %d to %d\n", yytext, lines, pos_start, pos_end);
 			default :
 				if (token == ERROR){
 					sprintf(token_stream[index].text, "[ERR]: unable to analysize %s at %d line, from %d to %d", yytext, lines, pos_start, pos_end);
 				} else {
 					strcpy(token_stream[index].text, yytext);
+				}
+				pos_start = pos_end;
+				pos_end += strlen(yytext);
+				if(!strcmp(yytext, "if")){
+					token = IF;
+				}else if(!strcmp(yytext, "else")){
+					token = ELSE;
+				}else if(!strcmp(yytext, "int")){
+					token = INT;
+				}else if(!strcmp(yytext, "float")){
+					token = FLOAT;
+				}else if(!strcmp(yytext, "return")){
+					token = RETURN;
+				}else if(!strcmp(yytext, "void")){
+					token = VOID;
+				}else if(!strcmp(yytext, "while")){
+					token = WHILE;
 				}
 				token_stream[index].token = token;
 				token_stream[index].lines = lines;

@@ -2,6 +2,8 @@
 #define _LEXICAL_ANALYZER_H_
 
 #include <stdio.h>
+#define __THROW
+#define __wur
 
 extern int fileno (FILE *__stream) __THROW __wur;
 
@@ -19,7 +21,7 @@ typedef enum cminus_token_type {
 	GTE = 266,
 	EQ = 267,
 	NEQ = 268,
-	ASSIN = 269,
+	ASSIGN = 269,
 	//符号
 	SEMICOLON = 270,
 	COMMA = 271,
@@ -42,7 +44,7 @@ typedef enum cminus_token_type {
 	INTEGER = 286,
 	FLOATPOINT = 287,
 	ARRAY = 288,
-	LETTER = 289,
+	LETTER = 289,	// String?
 	//others
 	EOL = 290,
 	COMMENT = 291,
