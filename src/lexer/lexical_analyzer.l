@@ -21,7 +21,7 @@ int pos_end;
  /****请在此补全所有flex的模式与动作  start******/
  //STUDENT TO DO
 
-. {return ERROR;} 
+. {return ERROR;}
 
 
 
@@ -50,10 +50,10 @@ void analyzer(char* input_file, Token_Node* token_stream){
 
     while(token = yylex()){
         switch(token){
-            case COMMENT: 
+            case COMMENT:
                 //STUDENT TO DO
             case BLANK:
-                //STUDENT TO DO	
+                //STUDENT TO DO
                 break;
             case EOL:
                 //STUDENT TO DO
