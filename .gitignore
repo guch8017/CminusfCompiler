@@ -2,3 +2,5 @@ build
 *.tokens
 .vscode
 lex.yy.c
+.DS_Store
+*/.DS_Store
