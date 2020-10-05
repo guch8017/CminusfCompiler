@@ -164,7 +164,7 @@ a       284     1       6       7
 
 ### 1.2 编译、运行和验证
 
-`lab1`的代表大部分由`C`和`python`构成，使用`cmake`进行编译。
+`lab1`的代码大部分由`C`和`python`构成，使用`cmake`进行编译。
 
 * 编译
 
@@ -246,7 +246,7 @@ a       284     1       6       7
 
   * git提交规范：
 
-    * 不破坏目录结构;
+    * 不破坏目录结构(report.md所需的图片请放在`Reports/lab1/figs/`下);
     * 不上传临时文件(凡是自动生成的文件和临时文件请不要上传，包括`lex.yy.c`文件以及各位自己生成的`tokens`文件);
     * git log言之有物(不强制, 请不要git commit -m 'commit 1', git commit -m 'sdfsdf'，每次commit请提交有用的comment信息)
   
