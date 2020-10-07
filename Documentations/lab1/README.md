@@ -124,7 +124,7 @@ look, I find 2 words of 10 chars
 
 ```shell
 int     280     1       2       5
-a       284     1       6       7
+a       285     1       6       7
 ;       270     1       7       8
 ```
 **具体的需识别token参考[lexical_analyzer.h](./include/lexical_analyzer.h)**
