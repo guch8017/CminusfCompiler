@@ -60,7 +60,7 @@
 
 ![](http://alumni.cs.ucr.edu/~lgao/teaching/Img/flex.jpg)
 
-首先，`FLEX`从输入文件`*.lex`或者`stdio`读取词法扫描器的规范，从而生成C代码源文件`lex.y.c`。然后，编译`lex.yy.c`并与`-lfl`库链接，以生成可执行的`a.out`。最后，`a.out`分析其输入流，将其转换为一系列token。
+首先，`FLEX`从输入文件`*.lex`或者`stdio`读取词法扫描器的规范，从而生成C代码源文件`lex.yy.c`。然后，编译`lex.yy.c`并与`-lfl`库链接，以生成可执行的`a.out`。最后，`a.out`分析其输入流，将其转换为一系列token。
 
 我们以一个简单的单词数量统计的程序wc.l为例: 
 
