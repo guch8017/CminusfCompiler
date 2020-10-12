@@ -18,7 +18,6 @@
  /****请在此补全所有flex的模式与动作  start******/
  //STUDENT TO DO
 "/*"([^\*]|(\*)*[^\*/])*(\*)*"*/" {return COMMENT;}
-\"\" {return LETTER;}
 
 \+ {return ADD;}
 \- {return SUB;}
@@ -30,7 +29,7 @@
 \>\= {return GTE;}
 \=\= {return EQ;}
 \!\= {return NEQ;}
-\= {return ASSIGN;}
+\= {return ASSIN;}
 
 \; {return SEMICOLON;}
 \, {return COMMA;}
@@ -40,6 +39,13 @@
 \] {return RBRACKET;}
 \{ {return LBRACE;}
 \} {return RBRACE;}
+int {return INT;}
+float {return FLOAT;}
+return {return RETURN;}
+void {return VOID;}
+while {return WHILE;}
+if {return IF;}
+else {return ELSE;}
 
 [_a-zA-Z][_a-zA-Z0-9]* {return IDENTIFIER;}
 [0-9]+\.[0-9]* {return FLOATPOINT;}
@@ -48,6 +54,7 @@
 [a-zA-Z]+ {return LETTER;}
 \n {return EOL;}
 [ \t]+ {return BLANK;}
+
 . {return ERROR;} 
 
 
@@ -106,21 +113,7 @@ void analyzer(char* input_file, Token_Node* token_stream){
 				}
 				pos_start = pos_end;
 				pos_end += strlen(yytext);
-				if(!strcmp(yytext, "if")){
-					token = IF;
-				}else if(!strcmp(yytext, "else")){
-					token = ELSE;
-				}else if(!strcmp(yytext, "int")){
-					token = INT;
-				}else if(!strcmp(yytext, "float")){
-					token = FLOAT;
-				}else if(!strcmp(yytext, "return")){
-					token = RETURN;
-				}else if(!strcmp(yytext, "void")){
-					token = VOID;
-				}else if(!strcmp(yytext, "while")){
-					token = WHILE;
-				}
+				
 				token_stream[index].token = token;
 				token_stream[index].lines = lines;
 				token_stream[index].pos_start = pos_start;
