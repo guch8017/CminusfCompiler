@@ -60,7 +60,7 @@
 
 ![](http://alumni.cs.ucr.edu/~lgao/teaching/Img/flex.jpg)
 
-首先，`FLEX`从输入文件`*.lex`或者`stdio`读取词法扫描器的规范，从而C代码源文件`lex.y.c`。然后，编译`lex..yy.c`并与`-lfl`库链接，以生成可执行的`a.out`。最后，`a.out`分析其输入流，将其转换为一系列token。
+首先，`FLEX`从输入文件`*.lex`或者`stdio`读取词法扫描器的规范，从而生成C代码源文件`lex.yy.c`。然后，编译`lex.yy.c`并与`-lfl`库链接，以生成可执行的`a.out`。最后，`a.out`分析其输入流，将其转换为一系列token。
 
 我们以一个简单的单词数量统计的程序wc.l为例: 
 
@@ -124,7 +124,7 @@ look, I find 2 words of 10 chars
 
 ```shell
 int     280     1       2       5
-a       284     1       6       7
+a       285     1       6       7
 ;       270     1       7       8
 ```
 **具体的需识别token参考[lexical_analyzer.h](./include/lexical_analyzer.h)**
@@ -164,7 +164,7 @@ a       284     1       6       7
 
 ### 1.2 编译、运行和验证
 
-`lab1`的代表大部分由`C`和`python`构成，使用`cmake`进行编译。
+`lab1`的代码大部分由`C`和`python`构成，使用`cmake`进行编译。
 
 * 编译
 
@@ -246,7 +246,7 @@ a       284     1       6       7
 
   * git提交规范：
 
-    * 不破坏目录结构;
+    * 不破坏目录结构(report.md所需的图片请放在`Reports/lab1/figs/`下);
     * 不上传临时文件(凡是自动生成的文件和临时文件请不要上传，包括`lex.yy.c`文件以及各位自己生成的`tokens`文件);
     * git log言之有物(不强制, 请不要git commit -m 'commit 1', git commit -m 'sdfsdf'，每次commit请提交有用的comment信息)
   

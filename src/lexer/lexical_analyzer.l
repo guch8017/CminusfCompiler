@@ -6,6 +6,9 @@
 
 #include "lexical_analyzer.h"
 
+int lines;
+int pos_start;
+int pos_end;
 
 /*****************声明和选项设置  end*****************/
 
@@ -55,7 +58,7 @@ else {return ELSE;}
 (\r)*\n {return EOL;}
 [ \t]+ {return BLANK;}
 
-. {return ERROR;} 
+. {return ERROR;}
 
 
 
@@ -67,10 +70,13 @@ else {return ELSE;}
 
 /// \brief analysize a *.cminus file
 ///
-///	\param input_file, 需要分析的文件路径
+/// \param input_file, 需要分析的文件路径
 /// \param token stream, Token_Node结构体数组，用于存储分析结果，具体定义参考lexical_analyer.h
 
 void analyzer(char* input_file, Token_Node* token_stream){
+	lines = 1;
+    pos_start = 1;
+    pos_end = 1;
 	if(!(yyin = fopen(input_file,"r"))){
 		printf("[ERR] No input file\n");
 		exit(1);
