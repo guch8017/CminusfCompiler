@@ -52,7 +52,7 @@ else {return ELSE;}
 [0-9]+ {return INTEGER;}
 \[\] {return ARRAY;}
 [a-zA-Z]+ {return LETTER;}
-\n {return EOL;}
+(\r)*\n {return EOL;}
 [ \t]+ {return BLANK;}
 
 . {return ERROR;} 
