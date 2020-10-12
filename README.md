@@ -8,7 +8,7 @@
 ### FAQ: How to merge upperstream remote branches
 In brief, you need another alias for upstream repository (we assume you are now in your local copy of forked repository on Gitlab):
 ```
-(shell) $ git remote add upstream git@222.195.68.197/:staff/2020fall-compiler_cminus.git
+(shell) $ git remote add upstream git@222.195.68.197:staff/2020fall-compiler_cminus.git
 ```
 Then try to merge remote commits to your local repository:
 ```
