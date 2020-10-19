@@ -3,4 +3,7 @@ build
 .vscode
 lex.yy.c
 .DS_Store
+
 *.diff
+*/.DS_Store
+
