@@ -6,7 +6,7 @@
 
 ### 主要工作
 
-1. 了解 `bison` 基础知识和理解 Cminus 语法（重在了解如何将文法产生式转换为 `bison` 语句）
+1. 了解 `bison` 基础知识和理解 Cminus-f 语法（重在了解如何将文法产生式转换为 `bison` 语句）
 2. 阅读 `/src/common/SyntaxTree.c`，对应头文件 `/include/SyntaxTree.h`（重在理解分析树如何生成）
 3. 了解 `bison` 与 `flex` 之间是如何协同工作，看懂pass_node函数并改写 Lab1 代码（提示：了解 `yylval` 是如何工作，在代码层面上如何将值传给`$1`、`$2`等）
 4. 补全 `src/parser/syntax_analyzer.y` 文件和 `lexical_analyzer.l` 文件
