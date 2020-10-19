@@ -99,7 +99,7 @@ Cminus的详情请参考《编译原理与实践》第九章附录。
 23. $`\text{addop} \rightarrow \textbf{+}\ |\ \textbf{-}`$
 24. $`\text{term} \rightarrow \text{term}\ \text{mulop}\ \text{factor}\ |\ \text{factor}`$
 25. $`\text{mulop} \rightarrow \textbf{*}\ |\ \textbf{/}`$
-26. $`\text{factor} \rightarrow \textbf{(}\ \text{expression}\ \textbf{)}\ |\ \text{var}\ |\ \text{call}\ |\ \textbf{integer}\ |\ \textbf{float}`$
+26. $`\text{factor} \rightarrow \textbf{(}\ \text{expression}\ \textbf{)}\ |\ \text{var}\ |\ \text{call}\ |\ \text{integer}\ |\ \text{float}`$
 27. $`\text{integer} \rightarrow \textbf{INTEGER}`$
 28. $`\text{float} \rightarrow \textbf{FLOATPOINT}`$
 29. $`\text{call} \rightarrow \textbf{ID}\ \textbf{(}\ \text{args} \textbf{)}`$
