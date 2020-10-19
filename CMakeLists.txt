@@ -9,7 +9,7 @@ set(CMAKE_C_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 set(CMAKE_CXX_STANDARD 17)
 
 find_package(FLEX REQUIRED)
-find_package(BISON REQUIRED)
+find_package(BISON 3.5.1 REQUIRED)
 
 INCLUDE_DIRECTORIES(
 include

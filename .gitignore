@@ -7,3 +7,5 @@ lex.yy.c
 *.diff
 */.DS_Store
 
+tests/lab2/syntree_easy_generate/
+tests/lab2/syntree_normal_generate/
