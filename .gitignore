@@ -3,4 +3,9 @@ build
 .vscode
 lex.yy.c
 .DS_Store
+
 *.diff
+*/.DS_Store
+
+tests/lab2/syntree_easy_generate/
+tests/lab2/syntree_normal_generate/

@@ -17,7 +17,6 @@ for f in target_files:
     print(f"TEST CASE {f} :", end='')
     input_file_path = os.path.join(INPUT_FILE_DIR, f)
     output_file = f.split('.cminus')[0] + '.tokens'
-    diff_file = output_file.replace('tokens', 'diff')
     output_file_path = os.path.join(OUTPUT_FILE_DIR, output_file)
     ta_token_path = os.path.join(TA_TOKEN_FILE_DIR, output_file)
     os.popen('./build/lexer %s %s' % (input_file_path, output_file_path)).read()

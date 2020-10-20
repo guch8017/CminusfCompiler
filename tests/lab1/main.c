@@ -14,10 +14,7 @@ int main(int argc, char **argv){
 	}
 	char* input_file = argv[1];
 	char* output_file = argv[2];
-	
-	lines = 1;
-	pos_start = 1;
-	pos_end = 1;
+
 
 	//token_stream 至多存储 MAX_NUM_TOKEN_NODE 个Token_Node
 	Token_Node token_stream[MAX_NUM_TOKEN_NODE];
