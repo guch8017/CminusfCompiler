@@ -50,8 +50,8 @@ while {return WHILE;}
 if {return IF;}
 else {return ELSE;}
 
-[_a-zA-Z][_a-zA-Z0-9]* {return IDENTIFIER;}
-[0-9]+\.[0-9]* {return FLOATPOINT;}
+[a-zA-Z]+ {return IDENTIFIER;}
+[0-9]*\.[0-9]+|[0-9]+\.[0-9]* {return FLOATPOINT;}
 [0-9]+ {return INTEGER;}
 \[\] {return ARRAY;}
 [a-zA-Z]+ {return LETTER;}
