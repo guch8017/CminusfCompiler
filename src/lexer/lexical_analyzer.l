@@ -88,7 +88,7 @@ void analyzer(char* input_file, Token_Node* token_stream){
 	lines = 1;
 	pos_start = 0;
 	pos_end = 1;
-	while(token = yylex()){
+	while((token = yylex())){
 		switch(token){
 			case COMMENT: 
 				for(int i = 0; i < strlen(yytext); ++i){
@@ -126,7 +126,7 @@ void analyzer(char* input_file, Token_Node* token_stream){
 				token_stream[index].pos_end = pos_end;
 				index++;
 				if (index >= MAX_NUM_TOKEN_NODE){
-					printf("%d has too many tokens (> %d)", input_file, MAX_NUM_TOKEN_NODE);
+					printf("%s has too many tokens (> %d)", input_file, MAX_NUM_TOKEN_NODE);
 					exit(1);
 				}
 		}

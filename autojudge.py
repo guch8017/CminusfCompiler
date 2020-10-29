@@ -41,8 +41,8 @@ if __name__ == "__main__":
             os.popen(f"build/parser < tests/lab2/{case}/{filename} > tests/lab2/syntree_{case}_generate/{filename[:-6]}syntax_tree").read()
             diff = os.popen(f'diff tests/lab2/syntree_{case}_generate/{filename[:-6]}syntax_tree tests/lab2/syntree_{case}_std/{filename[:-6]}syntax_tree').read()
             if diff:
-                print("\t Failed")
+                print("\t \033[31m\Failed\033[0m")
                 if easy:
                     print(diff)
             else:
-                print("\t Passed")
+                print("\t \033[32mPassed\033[0m")
