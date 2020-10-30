@@ -6,6 +6,7 @@ extern "C" {
 }
 #include <vector>
 #include <memory>
+#include <string>
 
 enum CminusType {
     TYPE_INT,
