@@ -210,13 +210,13 @@
 
 ### Other operators
 #### ICmp FCmp
-- 概念：`icmp`指令根据两个整数的比较返回布尔值，`fcmp`指令根据两个浮点数的比较返回布尔值。
+- 概念：`icmp`指令根据两个相同类型的整数的比较返回布尔值，`fcmp`指令根据两个相同类型的浮点数的比较返回布尔值。
 - 格式：
   - `<result> = icmp <cond> <type> <op1>, <op2>`
     - `<cond> = eq | ne | sgt | sge | slt | sle`
   - `<result> = fcmp <cond> <type> <op1>, <op2>`
     - `<cond> = eq | ne | ugt | uge | ult | ule`
-- 例子：`i1 %2 = cmp sge i32 %0 i32 %1`
+- 例子：`i1 %2 = icmp sge i32 %0 i32 %1`
 
 #### Call
 - 概念：`call`指令用于使控制流转移到指定的函数，其传入参数绑定到指定的值。 在被调用函数中执行`ret`指令后，控制流程将在函数调用后继续执行该指令，并且该函数的返回值绑定到`result`参数。
