@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(FLEX REQUIRED)
 find_package(BISON 3.5.1 REQUIRED)
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM 10.0.1 REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 llvm_map_components_to_libnames(
