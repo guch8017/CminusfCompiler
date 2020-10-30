@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
     const char *input = NULL;
 
     if (argc >= 3) {
-        printf("usage: %s\n");
+        printf("usage: %s\n", argv[0]);
         printf("usage: %s <cminus_file>\n", argv[0]);
         return 1;
     }
