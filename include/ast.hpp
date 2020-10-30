@@ -7,13 +7,13 @@ extern "C" {
 #include <vector>
 #include <memory>
 
-enum cminus_type {
+enum CminusType {
     TYPE_INT,
     TYPE_FLOAT,
     TYPE_VOID
 };
 
-enum relop {
+enum RelOp {
     // <=
     OP_LE,
     // <
@@ -28,226 +28,227 @@ enum relop {
     OP_NEQ
 };
 
-enum addop {
+enum AddOp {
     // +
     OP_PLUS,
     // -
     OP_MINUS
 };
 
-enum mulop {
+enum MulOp {
     // *
     OP_MUL,
     // /
     OP_DIV
 };
 
-class ast;
+class AST;
 
-struct ast_node;
-struct ast_program ;
-struct ast_declaration;
-struct ast_num;
-struct ast_var_declaration;
-struct ast_fun_declaration;
-struct ast_param;
-struct ast_compound_stmt;
-struct ast_statement;
-struct ast_expresion_stmt;
-struct ast_selection_stmt;
-struct ast_iteration_stmt;
-struct ast_return_stmt;
-struct ast_factor;
-struct ast_expression;
-struct ast_var;
-struct ast_assign_expression;
-struct ast_simple_expression;
-struct ast_additive_expression;
-struct ast_term ;
-struct ast_call;
+struct ASTNode;
+struct ASTProgram;
+struct ASTDeclaration;
+struct ASTNum;
+struct ASTVarDeclaration;
+struct ASTFunDeclaration;
+struct ASTParam;
+struct ASTCompoundStmt;
+struct ASTStatement;
+struct ASTExpressionStmt;
+struct ASTSelectionStmt;
+struct ASTIterationStmt;
+struct ASTReturnStmt;
+struct ASTFactor;
+struct ASTExpression;
+struct ASTVar;
+struct ASTAssignExpression;
+struct ASTSimpleExpression;
+struct ASTAdditiveExpression;
+struct ASTTerm ;
+struct ASTCall;
 
-class ast_visitor;
+class ASTVisitor;
 
-class ast {
+class AST {
 public:
-    ast() = delete;
-    ast(syntax_tree *);
-    ast(ast &&tree) {
+    AST() = delete;
+    AST(syntax_tree *);
+    AST(AST &&tree) {
         root = tree.root;
         tree.root = nullptr;
     };
-    ast_program* get_root() { return root.get(); }
-    void run_visitor(ast_visitor& visitor);
+    ASTProgram* get_root() { return root.get(); }
+    void run_visitor(ASTVisitor& visitor);
 private:
-    ast_node* transform_node_iter(syntax_tree_node *);
-    std::shared_ptr<ast_program> root = nullptr;
+    ASTNode* transform_node_iter(syntax_tree_node *);
+    std::shared_ptr<ASTProgram> root = nullptr;
 };
 
-struct ast_node {
-    virtual void accept(ast_visitor &) = 0;
+struct ASTNode {
+    virtual void accept(ASTVisitor &) = 0;
 };
 
-struct ast_program : ast_node {
-    virtual void accept(ast_visitor &) override final;
-    std::vector<std::shared_ptr<ast_declaration>>
+struct ASTProgram : ASTNode {
+    virtual void accept(ASTVisitor &) override final;
+    std::vector<std::shared_ptr<ASTDeclaration>>
         declarations;
 };
 
-struct ast_declaration: ast_node {
-    virtual void accept(ast_visitor &) override;
-    cminus_type type;
+struct ASTDeclaration: ASTNode {
+    virtual void accept(ASTVisitor &) override;
+    CminusType type;
     std::string id;
 };
 
-struct ast_factor: ast_node {
-    virtual void accept(ast_visitor &) override;
+struct ASTFactor: ASTNode {
+    virtual void accept(ASTVisitor &) override;
 };
 
-struct ast_num: ast_factor {
-    virtual void accept(ast_visitor &) override final;
-    cminus_type type;
+struct ASTNum: ASTFactor {
+    virtual void accept(ASTVisitor &) override final;
+    CminusType type;
     union {
         int i_val;
         float f_val;
     };
 };
 
-struct ast_var_declaration: ast_declaration {
-    virtual void accept(ast_visitor &) override final;
-    std::shared_ptr<ast_num> num;
+struct ASTVarDeclaration: ASTDeclaration {
+    virtual void accept(ASTVisitor &) override final;
+    CminusType type;
+    std::shared_ptr<ASTNum> num;
 };
 
-struct ast_fun_declaration: ast_declaration {
-    virtual void accept(ast_visitor &) override final;
-    std::vector<std::shared_ptr<ast_param>> params;
-    std::shared_ptr<ast_compound_stmt> compound_stmt;
+struct ASTFunDeclaration: ASTDeclaration {
+    virtual void accept(ASTVisitor &) override final;
+    std::vector<std::shared_ptr<ASTParam>> params;
+    std::shared_ptr<ASTCompoundStmt> compound_stmt;
 };
 
-struct ast_param: ast_node {
-    virtual void accept(ast_visitor &) override final;
-    cminus_type type;
+struct ASTParam: ASTNode {
+    virtual void accept(ASTVisitor &) override final;
+    CminusType type;
     std::string id;
     // true if it is array param
     bool isarray;
 };
 
-struct ast_statement : ast_node {
-    virtual void accept(ast_visitor &) override;
+struct ASTStatement : ASTNode {
+    virtual void accept(ASTVisitor &) override;
 };
 
-struct ast_compound_stmt: ast_statement {
-    virtual void accept(ast_visitor&) override final;
-    std::vector<std::shared_ptr<ast_var_declaration>> local_declarations;
-    std::vector<std::shared_ptr<ast_statement>> statement_list;
+struct ASTCompoundStmt: ASTStatement {
+    virtual void accept(ASTVisitor&) override final;
+    std::vector<std::shared_ptr<ASTVarDeclaration>> local_declarations;
+    std::vector<std::shared_ptr<ASTStatement>> statement_list;
 };
 
-struct ast_expresion_stmt: ast_statement { 
-    virtual void accept(ast_visitor &) override final;
-    std::shared_ptr<ast_expression> expression; 
+struct ASTExpressionStmt: ASTStatement { 
+    virtual void accept(ASTVisitor &) override final;
+    std::shared_ptr<ASTExpression> expression; 
 };
 
-struct ast_selection_stmt: ast_statement {
-    virtual void accept(ast_visitor &) override final;
-    std::shared_ptr<ast_expression> expression; 
-    std::shared_ptr<ast_statement> if_statement;
+struct ASTSelectionStmt: ASTStatement {
+    virtual void accept(ASTVisitor &) override final;
+    std::shared_ptr<ASTExpression> expression; 
+    std::shared_ptr<ASTStatement> if_statement;
     // should be nullptr if no else structure exists
-    std::shared_ptr<ast_statement> else_statement;
+    std::shared_ptr<ASTStatement> else_statement;
 };
 
-struct ast_iteration_stmt: ast_statement {
-    virtual void accept(ast_visitor &) override final;
-    std::shared_ptr<ast_expression> expression; 
-    std::shared_ptr<ast_statement> statement;
+struct ASTIterationStmt: ASTStatement {
+    virtual void accept(ASTVisitor &) override final;
+    std::shared_ptr<ASTExpression> expression; 
+    std::shared_ptr<ASTStatement> statement;
 };
 
-struct ast_return_stmt: ast_statement {
-    virtual void accept(ast_visitor &) override final;
+struct ASTReturnStmt: ASTStatement {
+    virtual void accept(ASTVisitor &) override final;
     // should be nullptr if return void
-    std::shared_ptr<ast_expression> expression; 
+    std::shared_ptr<ASTExpression> expression; 
 };
 
-struct ast_expression: ast_factor {
-    virtual void accept(ast_visitor &) override;
+struct ASTExpression: ASTFactor {
+    virtual void accept(ASTVisitor &) override;
 };
 
-struct ast_assign_expression: ast_expression {
-    virtual void accept(ast_visitor &) override final;
-    std::shared_ptr<ast_var> var;
-    std::shared_ptr<ast_expression> expression;
+struct ASTAssignExpression: ASTExpression {
+    virtual void accept(ASTVisitor &) override final;
+    std::shared_ptr<ASTVar> var;
+    std::shared_ptr<ASTExpression> expression;
 };
 
-struct ast_simple_expression: ast_expression {
-    virtual void accept(ast_visitor &) override final;
-    std::shared_ptr<ast_additive_expression> additive_expression_l;
-    std::shared_ptr<ast_additive_expression> additive_expression_r;
-    relop op;
+struct ASTSimpleExpression: ASTExpression {
+    virtual void accept(ASTVisitor &) override final;
+    std::shared_ptr<ASTAdditiveExpression> additive_expression_l;
+    std::shared_ptr<ASTAdditiveExpression> additive_expression_r;
+    RelOp op;
 };
 
-struct ast_var: ast_factor {
-    virtual void accept(ast_visitor &) override final;
+struct ASTVar: ASTFactor {
+    virtual void accept(ASTVisitor &) override final;
     std::string id;
     // nullptr if var is of int type
-    std::shared_ptr<ast_expression> expression;
+    std::shared_ptr<ASTExpression> expression;
 };
 
-struct ast_additive_expression: ast_node {
-    virtual void accept(ast_visitor &) override final;
-    std::shared_ptr<ast_additive_expression> additive_expression;
-    addop op;
-    std::shared_ptr<ast_term> term;
+struct ASTAdditiveExpression: ASTNode {
+    virtual void accept(ASTVisitor &) override final;
+    std::shared_ptr<ASTAdditiveExpression> additive_expression;
+    AddOp op;
+    std::shared_ptr<ASTTerm> term;
 };
 
-struct ast_term : ast_node {
-    virtual void accept(ast_visitor &) override final;
-    std::shared_ptr<ast_term> term;
-    mulop op;
-    std::shared_ptr<ast_factor> factor;
+struct ASTTerm : ASTNode {
+    virtual void accept(ASTVisitor &) override final;
+    std::shared_ptr<ASTTerm> term;
+    MulOp op;
+    std::shared_ptr<ASTFactor> factor;
 };
 
-struct ast_call: ast_factor {
-    virtual void accept(ast_visitor &) override final;
+struct ASTCall: ASTFactor {
+    virtual void accept(ASTVisitor &) override final;
     std::string id;
-    std::vector<std::shared_ptr<ast_expression>> args;
+    std::vector<std::shared_ptr<ASTExpression>> args;
 };
 
-class ast_visitor {
+class ASTVisitor {
 public:
-    virtual void visit(ast_program &) = 0;
-    virtual void visit(ast_num &) = 0;
-    virtual void visit(ast_var_declaration &) = 0;
-    virtual void visit(ast_fun_declaration &) = 0;
-    virtual void visit(ast_param &) = 0;
-    virtual void visit(ast_compound_stmt &) = 0;
-    virtual void visit(ast_expresion_stmt &) = 0;
-    virtual void visit(ast_selection_stmt &) = 0;
-    virtual void visit(ast_iteration_stmt &) = 0;
-    virtual void visit(ast_return_stmt &) = 0;
-    virtual void visit(ast_assign_expression &) = 0;
-    virtual void visit(ast_simple_expression &) = 0;
-    virtual void visit(ast_additive_expression &) = 0;
-    virtual void visit(ast_var &) = 0;
-    virtual void visit(ast_term &) = 0;
-    virtual void visit(ast_call &) = 0;
+    virtual void visit(ASTProgram &) = 0;
+    virtual void visit(ASTNum &) = 0;
+    virtual void visit(ASTVarDeclaration &) = 0;
+    virtual void visit(ASTFunDeclaration &) = 0;
+    virtual void visit(ASTParam &) = 0;
+    virtual void visit(ASTCompoundStmt &) = 0;
+    virtual void visit(ASTExpressionStmt &) = 0;
+    virtual void visit(ASTSelectionStmt &) = 0;
+    virtual void visit(ASTIterationStmt &) = 0;
+    virtual void visit(ASTReturnStmt &) = 0;
+    virtual void visit(ASTAssignExpression &) = 0;
+    virtual void visit(ASTSimpleExpression &) = 0;
+    virtual void visit(ASTAdditiveExpression &) = 0;
+    virtual void visit(ASTVar &) = 0;
+    virtual void visit(ASTTerm &) = 0;
+    virtual void visit(ASTCall &) = 0;
 };
 
-class ast_printer : public ast_visitor {
+class ASTPrinter : public ASTVisitor {
 public:
-    virtual void visit(ast_program &) override final;
-    virtual void visit(ast_num &) override final;
-    virtual void visit(ast_var_declaration &) override final;
-    virtual void visit(ast_fun_declaration &) override final;
-    virtual void visit(ast_param &) override final;
-    virtual void visit(ast_compound_stmt &) override final;
-    virtual void visit(ast_expresion_stmt &) override final;
-    virtual void visit(ast_selection_stmt &) override final;
-    virtual void visit(ast_iteration_stmt &) override final;
-    virtual void visit(ast_return_stmt &) override final;
-    virtual void visit(ast_assign_expression &) override final;
-    virtual void visit(ast_simple_expression &) override final;
-    virtual void visit(ast_additive_expression &) override final;
-    virtual void visit(ast_var &) override final;
-    virtual void visit(ast_term &) override final;
-    virtual void visit(ast_call &) override final;
+    virtual void visit(ASTProgram &) override final;
+    virtual void visit(ASTNum &) override final;
+    virtual void visit(ASTVarDeclaration &) override final;
+    virtual void visit(ASTFunDeclaration &) override final;
+    virtual void visit(ASTParam &) override final;
+    virtual void visit(ASTCompoundStmt &) override final;
+    virtual void visit(ASTExpressionStmt &) override final;
+    virtual void visit(ASTSelectionStmt &) override final;
+    virtual void visit(ASTIterationStmt &) override final;
+    virtual void visit(ASTReturnStmt &) override final;
+    virtual void visit(ASTAssignExpression &) override final;
+    virtual void visit(ASTSimpleExpression &) override final;
+    virtual void visit(ASTAdditiveExpression &) override final;
+    virtual void visit(ASTVar &) override final;
+    virtual void visit(ASTTerm &) override final;
+    virtual void visit(ASTCall &) override final;
     void add_depth() { depth += 2; }
     void remove_depth() { depth -= 2; }
 private:
