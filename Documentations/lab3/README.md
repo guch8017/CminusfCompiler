@@ -254,6 +254,8 @@ $ g++ visitor.cpp -std=c++14; ./a.out
 * 编译与运行
   在 `${WORKSPACE}/build/` 下执行:
   ``` shell
+  # 如果存在 CMakeCache.txt 要先删除
+  # rm CMakeCache.txt
   cmake ..
   make
   make install
