@@ -115,7 +115,7 @@ builder->create_ret(ret_main_val);  // ret i32 %8
   /   \        /    \
 numA   numB   numB   numA
 ```
-`exprRoot->numberF->exprE->exprD->numberB->numberA->exprC->numberA->numberB`
+`numberF->numB->numA->exprD->numA->numB->exprC->exprE->exprRoot`
 
 
 ## 问题3: getelementptr
