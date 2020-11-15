@@ -18,7 +18,8 @@ class BasicBlock : public Value
 public:
     static BasicBlock *create(Module *m, const std::string &name ,
                             Function *parent ) {
-        return new BasicBlock(m, name, parent);
+        auto prefix = name.empty() ? "" : "label.";
+        return new BasicBlock(m, prefix + name, parent);
     }
 
     // return parent, or null if none.
