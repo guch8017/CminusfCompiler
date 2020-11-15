@@ -11,17 +11,13 @@ Module::Module(std::string name)
     float32_ty_ = new FloatType();
     float32ptr_ty_ = new PointerType(float32_ty_);
     // init instr_id2string
-    instr_id2string_.insert({ Instruction::Ret, "ret" }); //todo ...
+    instr_id2string_.insert({ Instruction::Ret, "ret" }); 
     instr_id2string_.insert({ Instruction::Br, "br" }); 
-    instr_id2string_.insert({ Instruction::Neg, "neg" });
     
     instr_id2string_.insert({ Instruction::Add, "add" });
     instr_id2string_.insert({ Instruction::Sub, "sub" });
     instr_id2string_.insert({ Instruction::Mul, "mul" });
     instr_id2string_.insert({ Instruction::Div, "sdiv" });
-
-    instr_id2string_.insert({ Instruction::And, "and" });
-    instr_id2string_.insert({ Instruction::Or, "or" });
     
     instr_id2string_.insert({ Instruction::FAdd, "fadd" });
     instr_id2string_.insert({ Instruction::FSub, "fsub" });

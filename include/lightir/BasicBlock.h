@@ -42,7 +42,7 @@ public:
     int get_num_of_instr() { return instr_list_.size(); }
     std::list<Instruction *> get_instructions() { return instr_list_; }
     
-    void erase_from_parent();// todo : 测试是否正确
+    void erase_from_parent();
 
     virtual std::string print() override;
 

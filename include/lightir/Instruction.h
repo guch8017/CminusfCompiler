@@ -15,18 +15,11 @@ public:
         // Terminator Instructions
         Ret,
         Br,
-        // Standard unary operators
-        Neg,
         // Standard binary operators
         Add,
         Sub,
         Mul,
         Div,
-        Rem,
-        // Logical operators
-        And,
-        Or,
-        Not,
         // float binary operators
         FAdd,
         FSub,

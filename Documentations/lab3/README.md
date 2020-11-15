@@ -34,7 +34,7 @@
 ## 1. LLVM IR部分
 ### 1.1 LLVM IR介绍
 根据[维基百科](https://zh.wikipedia.org/zh-cn/LLVM)的介绍，LLVM是一个自由软件项目，它是一种编译器基础设施，以C++写成，包含一系列模块化的编译器组件和工具链，用来开发编译器前端和后端。IR的全称是Intermediate Representation，即中间表示。LLVM IR是一种类似于汇编的底层语言。  
-LLVM IR的具体指令可以参考[Reference Manual](http://llvm.org/docs/LangRef.html)。但是你会发现其内容庞杂。虽然助教认为，高效地查阅官方文档及手册是非常必要的一项技能，但是由于其手册过于复杂，因此助教筛选了后续实验中将要用到的子集，总结为了[精简的IR Reference手册](IR.md)。  
+LLVM IR的具体指令可以参考[Reference Manual](http://llvm.org/docs/LangRef.html)。但是你会发现其内容庞杂。虽然助教认为，高效地查阅官方文档及手册是非常必要的一项技能，但是由于其手册过于复杂，因此助教筛选了后续实验中将要用到的子集，总结为了[精简的IR Reference手册](../common/LightIR.md)。  
 作为一开始的参考，你可以先阅读其中`IR Features`和`IR Format`两节，后续有需要再反复参考。实验的最后，你需要在[report.md](./Reports/lab3/report.md)中**回答问题3**。  
 
 ### 1.2 gcd例子: 利用clang生成的.ll
@@ -54,7 +54,7 @@ LLVM IR的具体指令可以参考[Reference Manual](http://llvm.org/docs/LangRe
 
 ## 2. LightIR部分
 ### 2.1 LightIR - LLVM IR的C++接口
-由于LLVM IR官方的C++接口的文档同样过于冗长，助教提供了`LightIR`这一C++接口库。你需要阅读[LightIR核心类的介绍](./核心类介绍.md)。  
+由于LLVM IR官方的C++接口的文档同样过于冗长，助教提供了`LightIR`这一C++接口库。你需要阅读[LightIR核心类的介绍](../common/LightIR.md)。  
 lab4部分会要求大家通过`LightIR`根据`AST`构建生成LLVM IR。所以你需要仔细阅读文档了解其接口的设计。
 
 ### 2.2 gcd例子: 利用LightIR + cpp 生成.ll
@@ -208,9 +208,8 @@ $ g++ visitor.cpp -std=c++14; ./a.out
 ├── CMakeLists.txt
 ├── Documentations
 │   ├── ...
+|   ├── common                          <- LightIR 相关文档
 │   └── lab3
-│       ├── 核心类介绍.md
-│       ├── IR.md
 │       └── README.md                   <- lab3实验文档说明（你在这里）
 ├── include                             <- 实验所需的头文件
 │   ├── ...
