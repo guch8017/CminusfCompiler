@@ -63,7 +63,7 @@ bool in_global();
 mkdir build && cd build
 cmake .. -DLLVM_DIR=/path/to/your/llvm/install/lib/cmake/llvm/
 make -j
-# 你也可以安装它以便于链接libcminus_io.a
+# 安装它以便于链接 libcminus_io.a
 make install
 ```
 
