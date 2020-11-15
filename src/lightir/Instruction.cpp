@@ -229,7 +229,7 @@ std::string CallInst::print()
     }
     instr_ir += this->get_module()->get_instr_op_name( this->get_instr_type() );
     instr_ir += " ";
-    instr_ir += this->get_function_type()->get_return_type()->print();    // 打印返回值类型 todo 没考虑变量参数个数的情况
+    instr_ir += this->get_function_type()->get_return_type()->print();    
     
     instr_ir += " ";
     assert(dynamic_cast<Function *>(this->get_operand(0)) && "Wrong call operand function");

@@ -18,7 +18,8 @@ class BasicBlock : public Value
 public:
     static BasicBlock *create(Module *m, const std::string &name ,
                             Function *parent ) {
-        return new BasicBlock(m, name, parent);
+        auto prefix = name.empty() ? "" : "label.";
+        return new BasicBlock(m, prefix + name, parent);
     }
 
     // return parent, or null if none.
@@ -42,7 +43,7 @@ public:
     int get_num_of_instr() { return instr_list_.size(); }
     std::list<Instruction *> get_instructions() { return instr_list_; }
     
-    void erase_from_parent();// todo : 测试是否正确
+    void erase_from_parent();
 
     virtual std::string print() override;
 
