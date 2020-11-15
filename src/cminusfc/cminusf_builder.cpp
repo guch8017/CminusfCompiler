@@ -1,5 +1,4 @@
 #include "cminusf_builder.hpp"
-#include <iostream>
 
 // You can define global variables here
 // to store state
