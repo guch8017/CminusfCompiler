@@ -513,6 +513,7 @@
   ```cpp
   bool is_void_type()// 判断是否是void类型其他类型有类似API请查看Type.h
   static Type *get_void_type(Module *m);// 得到void类型
+  Type *get_pointer_element_type();// 若是pointertype则返回指向的类型，若不是则返回nullptr。
   ```
 
   
