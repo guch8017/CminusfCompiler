@@ -165,7 +165,9 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
     scope.enter();t_scope.enter();
     int i = 0;
     for(auto arg: function->get_args()){
-        scope.push(node.params[i]->id, arg);
+        if(!scope.push(node.params[i]->id, arg)){
+            throw "Redefinition of '" + node.params[i]->id + '\'';
+        }
         t_scope.push(node.params[i]->id, node.params[i]->type, node.params[i]->isarray);
         ++i;
     }
