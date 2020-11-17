@@ -352,6 +352,8 @@ void CminusfBuilder::visit(ASTVar &node) {
         builder->create_cond_br(cond, err_cond, normal_cond);
         builder->set_insert_point(err_cond);
         builder->create_call(scope.find("neg_idx_except"), {});
+        // 本来应该是输出一个unreachable，但是LightIR里面未实现这个，换成无条件跳转，实际上此时程序已经退出了
+        builder->create_br(normal_cond);
         builder->set_insert_point(normal_cond);
         bottom_up_stack.push(builder->create_gep(var, {ConstantInt::get(0, module.get()), subscrip}));
     }else
