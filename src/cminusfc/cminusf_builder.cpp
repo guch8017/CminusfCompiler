@@ -224,6 +224,9 @@ void CminusfBuilder::visit(ASTCompoundStmt &node) {
 
 void CminusfBuilder::visit(ASTExpressionStmt &node) { 
     node.expression->accept(*this);
+    // 未用到表的达式返回值，也将其弹出栈
+    type_stack.pop();
+    bottom_up_stack.pop();
 }
 
 void CminusfBuilder::visit(ASTSelectionStmt &node) {
