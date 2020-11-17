@@ -39,18 +39,26 @@ private:
     std::vector<std::map<std::string, std::tuple<CminusType, bool>>> inner;
 };
 
-bool global_scope = true;
-bool has_new_statement = true;
 int block_counter = 0;
-// 函数参数类型
+/// 函数参数类型
+/// Type不从Value派生，故无法使用bottom_up_stack向上传递，改用一个vector来传递函数变量类型
 std::vector<Type*> param_list;
-// 当前函数体
+
+/// 当前正在处理的函数入
 Function* function = nullptr;
-// 向上传递的栈
-std::stack<Value*> bottom_up_stack;
-std::stack<CminusType> type_stack;
+
+/// 这两个栈中的元素保持对应，即类型栈栈顶代表的类型即为值的类型
+/// 注意：由于CminusType中没有i1的枚举，故此实现中i1采用TYPE_VOID进行存储
+std::stack<Value*> bottom_up_stack;  // 值传递栈
+std::stack<CminusType> type_stack;   // 类型栈
+
+/// 根据变量名获取变量的类型
 TypeScope t_scope;
-// 黑洞，用于吸收ret后的所有不可达指令
+
+
+/// 黑洞，用于吸收ret后的所有不可达指令，当builder指向此处时，所插入的代码将不会体现在输出的.ll上
+/// 当程序遇到ret语句时，在执行完builder->create_(void_)ret后，builder的插入点将会被设置到__bb黑洞处
+/// 此操作可以减少部分冗余代码，也可防止不可达代码带来的lli编译问题
 Module* blackholeModule = new Module("MOD");
 FunctionType* __funcType = FunctionType::get(Type::get_void_type(blackholeModule), {});
 Function* __blackholeFunc = Function::create(__funcType, "NONE", blackholeModule);
@@ -84,17 +92,17 @@ Type* GetDeclType(CminusType _type, Module* module){
 }
 
 inline std::string GetNewBlockName(){
+    /**
+     * 获取一个新的BasicBlock名 
+     **/
     return std::to_string(++block_counter);
 }
 
 void CminusfBuilder::visit(ASTProgram &node) {
-    scope.enter();t_scope.enter();
     for (auto n : node.declarations)
     {
         n->accept(*this);
     }
-    
-    scope.exit();t_scope.exit();
 }
 
 void CminusfBuilder::visit(ASTNum &node) { 
@@ -135,7 +143,7 @@ void CminusfBuilder::visit(ASTVarDeclaration &node) {
         // Not Array Type
         var_type = decl_type;
     }
-    if(global_scope){
+    if(scope.in_global()){
         // 全局变量
         ConstantZero* initializer = ConstantZero::get(decl_type, module.get());
         var = GlobalVariable::create(node.id, module.get(), var_type, false, initializer);
@@ -161,7 +169,6 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
     // 知道是函数，后面的isArray随便给个值
     t_scope.push(node.id, node.type, false);
     function = func;
-    global_scope = false;
     scope.enter();t_scope.enter();
     int i = 0;
     for(auto arg: function->get_args()){
@@ -188,8 +195,6 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
         break;
     }
     scope.exit();t_scope.exit();
-    global_scope = true;
-    
 }
 
 void CminusfBuilder::visit(ASTParam &node) { 
