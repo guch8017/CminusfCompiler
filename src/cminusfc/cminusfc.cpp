@@ -59,7 +59,8 @@ int main(int argc, char **argv) {
             }
         }
     }
-
+    try
+    {    
     auto s = parse(input_path.c_str());
     auto a = AST(s);
     CminusfBuilder builder;
@@ -74,8 +75,17 @@ int main(int argc, char **argv) {
     output_stream << "source_filename = \""+ input_path +"\"\n\n";
     output_stream << IR;
     output_stream.close();
+    }
+    catch(const char* e)
+    {
+        std::cerr << e << std::endl;
+    }
+    catch(const std::string e)
+    {
+        std::cerr << e << std::endl;
+    }
     if (!emit) {
-        auto command_string = "clang -w "s + target_path + ".ll -o " + target_path + " -L. -lcminus_io";
+        auto command_string = "clang -w "s + target_path + ".ll -o " + target_path + " -L/usr/local/lib/ -lcminus_io";
         std::system(command_string.c_str());
         command_string = "rm "s + target_path + ".ll";
         std::system(command_string.c_str());
