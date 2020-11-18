@@ -16,7 +16,8 @@ typedef enum CM_TYPE{
     CM_ERR = 0x8,
     CM_VOID = 0x10,
     CM_ARRAY = 0x20,
-    CM_CONST = 0x40
+    CM_CONST = 0x40,
+    CM_PARAM = 0x80
 } CM_TYPE;
 
 class TypeScope {
@@ -111,21 +112,29 @@ inline std::string GetNewBlockName(){
     return std::to_string(++block_counter);
 }
 
-int CminusType2CM_TYPE(CminusType cm, bool is_array, bool is_const){
-    if(is_array && is_const){
-        printf("Warning: array and const flag are both set to true. There may be a bug in the code!");
+int CminusType2CM_TYPE(CminusType cm){
+    switch (cm)
+    {
+    case TYPE_INT:
+        return CM_INT;
+    case TYPE_FLOAT:
+        return CM_FLOAT;
+    case TYPE_VOID:
+        return CM_VOID;
+    default:
+        throw "unknown CminusType";
     }
-    CM_TYPE array_flag = (is_array) ? CM_ARRAY : CM_EMPTY;
-    CM_TYPE const_flag = (is_const) ? CM_CONST : CM_EMPTY;
-    CM_TYPE ty;
-    if(cm == TYPE_VOID){
-        ty = CM_VOID;
-    }else if(cm == TYPE_FLOAT){
-        ty = CM_FLOAT;
-    }else{
-        ty = CM_INT;
+}
+
+void LoadFromPointerIfNeeded(IRBuilder* builder){
+    Value* val = bottom_up_stack.top();
+    if( dynamic_cast<GlobalVariable*>(val) ||
+        dynamic_cast<AllocaInst*>(val) ||
+        dynamic_cast<GetElementPtrInst*>(val)){
+        // 传入为指针，需要读取值
+        bottom_up_stack.pop();
+        bottom_up_stack.push(builder->create_load(val));
     }
-    return (ty | array_flag | const_flag);
 }
 
 void CminusfBuilder::visit(ASTProgram &node) {
@@ -147,7 +156,7 @@ void CminusfBuilder::visit(ASTNum &node) {
     default:
         throw "unknown CminusType";
     }
-    type_stack.push(CminusType2CM_TYPE(node.type, false, true));
+    type_stack.push(CminusType2CM_TYPE(node.type) | CM_CONST);
 }
 
 void CminusfBuilder::visit(ASTVarDeclaration &node) { 
@@ -186,7 +195,7 @@ void CminusfBuilder::visit(ASTVarDeclaration &node) {
     if(!scope.push(node.id, var)){
         throw "Redefinition of '" + node.id + '\'';
     }
-    t_scope.push(node.id, CminusType2CM_TYPE(node.type, node.num != nullptr, false));
+    t_scope.push(node.id, CminusType2CM_TYPE(node.type) | ((node.num != nullptr) ? CM_ARRAY : CM_EMPTY));
 }
 
 void CminusfBuilder::visit(ASTFunDeclaration &node) {
@@ -198,18 +207,27 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
     FunctionType* f_type = FunctionType::get(ret_type, param_list);
     Function* func = Function::create(f_type, node.id, module.get());
     scope.push(node.id, func);
-    t_scope.push(node.id, CminusType2CM_TYPE(node.type, false, false));
+    t_scope.push(node.id, CminusType2CM_TYPE(node.type));
     function = func;
     scope.enter();t_scope.enter();
     int i = 0;
+    builder->set_insert_point(BasicBlock::create(module.get(), GetNewBlockName(), function));
     for(auto arg: function->get_args()){
-        if(!scope.push(node.params[i]->id, arg)){
+        if(node.params[i]->isarray){
+            if(node.params[i]->type == TYPE_INT){
+                AllocaInst* a_var = builder->create_alloca(Type::get_int32_ptr_type(module.get()));
+                builder->create_store(arg, a_var);
+                if(!scope.push(node.params[i]->id, a_var)){
+                    throw "redefinition of '" + node.params[i]->id + '\'';
+                }
+            }
+        }
+        else if(!scope.push(node.params[i]->id, arg)){
             throw "redefinition of '" + node.params[i]->id + '\'';
         }
-        t_scope.push(node.params[i]->id, CminusType2CM_TYPE(node.params[i]->type, node.params[i]->isarray, false));
+        t_scope.push(node.params[i]->id, CminusType2CM_TYPE(node.params[i]->type) | ((node.params[i]->isarray) ? CM_ARRAY : CM_EMPTY) | CM_PARAM);
         ++i;
     }
-    builder->set_insert_point(BasicBlock::create(module.get(), GetNewBlockName(), function));
     node.compound_stmt->accept(*this);
     switch (node.type)
     {
@@ -263,6 +281,7 @@ void CminusfBuilder::visit(ASTExpressionStmt &node) {
 void CminusfBuilder::visit(ASTSelectionStmt &node) {
     node.expression->accept(*this);
     // 运算结果需要压入栈中
+    LoadFromPointerIfNeeded(builder);
     Value* expression_val = bottom_up_stack.top();
     int expression_type = type_stack.top();
     // TODO: Array/Void类型检查、恒成立/不成立情况判断
@@ -304,6 +323,7 @@ void CminusfBuilder::visit(ASTIterationStmt &node) {
     builder->create_br(condBlock);
     builder->set_insert_point(condBlock);
     node.expression->accept(*this);
+    LoadFromPointerIfNeeded(builder);
     Value* cond = bottom_up_stack.top();
     int condType = type_stack.top();
     if(!(condType & CM_BOOL)){
@@ -330,6 +350,7 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
     }
     if(node.expression){
         node.expression->accept(*this);
+        LoadFromPointerIfNeeded(builder);
         Value* expr_val = bottom_up_stack.top();
         int expr_type = type_stack.top();
         if(function->get_return_type()->is_integer_type() && (expr_type & CM_FLOAT)){
@@ -364,12 +385,14 @@ void CminusfBuilder::visit(ASTVar &node) {
     if(!(var_t & CM_ARRAY) && node.expression != nullptr){
         throw "subscripted value is not an array";
     }
+    /*
     if((var_t & CM_ARRAY) && node.expression == nullptr){
         throw "array type is not assignable";
     }
-    
+    */
     if(node.expression){
         node.expression->accept(*this);
+        LoadFromPointerIfNeeded(builder);
         Value* subscrip = bottom_up_stack.top();
         int subscripType = type_stack.top();
         bottom_up_stack.pop();
@@ -386,7 +409,7 @@ void CminusfBuilder::visit(ASTVar &node) {
             if(sub_val < 0){
                 throw "index of array should be 0 or a positive number";
             }
-            bottom_up_stack.push(builder->create_gep(var, {ConstantInt::get(0, module.get()), subscrip}));
+            // bottom_up_stack.push(builder->create_gep(var, {ConstantInt::get(0, module.get()), subscrip}));
         }else{
             // 小于0判断（运行时）
             BasicBlock *err_cond = BasicBlock::create(module.get(), GetNewBlockName(), function);
@@ -398,6 +421,11 @@ void CminusfBuilder::visit(ASTVar &node) {
             // 本来应该是输出一个unreachable，但是LightIR里面未实现这个，换成无条件跳转，实际上此时程序已经退出了
             builder->create_br(normal_cond);
             builder->set_insert_point(normal_cond);
+        }
+        if(var_t & CM_PARAM){
+            auto ptr = builder->create_load(var);
+            bottom_up_stack.push(builder->create_gep(ptr, {subscrip,}));
+        }else{
             bottom_up_stack.push(builder->create_gep(var, {ConstantInt::get(0, module.get()), subscrip}));
         }
     }else
@@ -414,6 +442,7 @@ void CminusfBuilder::visit(ASTAssignExpression &node) {
     int var_type = type_stack.top();
     type_stack.pop();
     node.expression->accept(*this);
+    LoadFromPointerIfNeeded(builder);
     Value* store_val = bottom_up_stack.top();
     int val_type = type_stack.top();
     bottom_up_stack.pop();
@@ -458,9 +487,11 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
     if(node.additive_expression_r == nullptr){
         return;
     }else{
+        LoadFromPointerIfNeeded(builder);
         Value* l_val = bottom_up_stack.top();
         bottom_up_stack.pop();
         node.additive_expression_r->accept(*this);
+        LoadFromPointerIfNeeded(builder);
         Value* r_val = bottom_up_stack.top();
         bottom_up_stack.pop();
         switch (node.op)
@@ -495,15 +526,20 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
     if(node.additive_expression == nullptr){
         return;
     }else{
+        LoadFromPointerIfNeeded(builder);
         Value* term_val = bottom_up_stack.top();
         int term_ty = type_stack.top();
         bottom_up_stack.pop();
         type_stack.pop();
         node.additive_expression->accept(*this);
+        LoadFromPointerIfNeeded(builder);
         Value* addi_val = bottom_up_stack.top();
         int addi_ty = type_stack.top();
         bottom_up_stack.pop();
         type_stack.pop();
+        if(addi_ty & CM_VOID || term_ty & CM_VOID){
+            throw "void type only allowed for function results";
+        }
         // expression 常数优化，暂时不考虑i1为常量的情况
         if(term_ty & CM_CONST && addi_ty & CM_CONST){
             if(term_ty & CM_INT && addi_ty & CM_INT){
@@ -573,28 +609,23 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
 
 void CminusfBuilder::visit(ASTTerm &node) { 
     node.factor->accept(*this);
-    Value* factor_val = bottom_up_stack.top();
-    if( dynamic_cast<GlobalVariable*>(factor_val) ||
-        dynamic_cast<AllocaInst*>(factor_val) ||
-        dynamic_cast<GetElementPtrInst*>(factor_val)){
-        // 传入为指针，需要读取值
-        bottom_up_stack.pop();
-        factor_val = builder->create_load(factor_val);
-        bottom_up_stack.push(factor_val);
-    }
     if(node.term == nullptr){
         return;
     }else{
+        LoadFromPointerIfNeeded(builder);
         Value* factor_val = bottom_up_stack.top();
         int factor_ty = type_stack.top();
         bottom_up_stack.pop();
         type_stack.pop();
         node.term->accept(*this);
+        LoadFromPointerIfNeeded(builder);
         Value* term_val = bottom_up_stack.top();
         int term_ty = type_stack.top();
         bottom_up_stack.pop();
         type_stack.pop();
-
+        if(factor_ty & CM_VOID || term_ty & CM_VOID){
+            throw "void type only allowed for function results";
+        }
         // expression 常数优化，暂时不考虑i1为常量的情况
         if(term_ty & CM_CONST && factor_ty & CM_CONST){
             if(term_ty & CM_INT && factor_ty & CM_INT){
@@ -690,14 +721,30 @@ void CminusfBuilder::visit(ASTCall &node) {
         expr->accept(*this);
         Value* exprVal = bottom_up_stack.top();
         int exprType = type_stack.top();
-        if(exprType & CM_BOOL){
-            exprVal = builder->create_zext(exprVal, Type::get_int32_type(module.get()));
-            exprType = (exprType & (~CM_BOOL)) | CM_INT;
+        if(paramType->get_type()->is_pointer_type()){
+            if(!(exprType & CM_ARRAY)){
+                throw "array type is required by param";
+            }
+            if(exprType & CM_PARAM){
+                LoadInst *ptr = builder->create_load(exprVal);
+                exprVal = ptr;
+            }else{
+                GetElementPtrInst *ptr = builder->create_gep(exprVal, {ConstantInt::get(0, module.get()), ConstantInt::get(0, module.get())});
+                exprVal = ptr;
+            }
         }
-        if(exprType & CM_INT && paramType->get_type()->is_float_type()){
-            exprVal = builder->create_sitofp(exprVal, Type::get_float_type(module.get()));
-        }else if(exprType & CM_FLOAT && paramType->get_type()->is_integer_type()){
-            exprVal = builder->create_fptosi(exprVal, Type::get_int32_type(module.get()));
+        else{
+            LoadFromPointerIfNeeded(builder);
+            exprVal = bottom_up_stack.top();
+            if(exprType & CM_BOOL){
+                exprVal = builder->create_zext(exprVal, Type::get_int32_type(module.get()));
+                exprType = (exprType & (~CM_BOOL)) | CM_INT;
+            }
+            if(exprType & CM_INT && paramType->get_type()->is_float_type()){
+                exprVal = builder->create_sitofp(exprVal, Type::get_float_type(module.get()));
+            }else if(exprType & CM_FLOAT && paramType->get_type()->is_integer_type()){
+                exprVal = builder->create_fptosi(exprVal, Type::get_int32_type(module.get()));
+            }
         }
         params.push_back(exprVal);
         bottom_up_stack.pop();
