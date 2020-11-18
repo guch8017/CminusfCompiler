@@ -378,17 +378,28 @@ void CminusfBuilder::visit(ASTVar &node) {
         if(!(subscripType & CM_INT)){
             throw "index of array should be an integer";
         }
-        // 小于0判断（运行时）
-        BasicBlock *err_cond = BasicBlock::create(module.get(), GetNewBlockName(), function);
-        BasicBlock *normal_cond = BasicBlock::create(module.get(), GetNewBlockName(), function);
-        CmpInst *cond = builder->create_icmp_lt(subscrip, ConstantInt::get(0, module.get()));
-        builder->create_cond_br(cond, err_cond, normal_cond);
-        builder->set_insert_point(err_cond);
-        builder->create_call(scope.find("neg_idx_except"), {});
-        // 本来应该是输出一个unreachable，但是LightIR里面未实现这个，换成无条件跳转，实际上此时程序已经退出了
-        builder->create_br(normal_cond);
-        builder->set_insert_point(normal_cond);
-        bottom_up_stack.push(builder->create_gep(var, {ConstantInt::get(0, module.get()), subscrip}));
+        
+        if(subscripType & CM_CONST){
+            // 小于0判断（编译时）
+            // 注：若编译时能判断，即代表数组下标为常数，则跳过运行时判断，减少冗余代码
+            int sub_val = dynamic_cast<ConstantInt*>(subscrip)->get_value();
+            if(sub_val < 0){
+                throw "index of array should be 0 or a positive number";
+            }
+            bottom_up_stack.push(builder->create_gep(var, {ConstantInt::get(0, module.get()), subscrip}));
+        }else{
+            // 小于0判断（运行时）
+            BasicBlock *err_cond = BasicBlock::create(module.get(), GetNewBlockName(), function);
+            BasicBlock *normal_cond = BasicBlock::create(module.get(), GetNewBlockName(), function);
+            CmpInst *cond = builder->create_icmp_lt(subscrip, ConstantInt::get(0, module.get()));
+            builder->create_cond_br(cond, err_cond, normal_cond);
+            builder->set_insert_point(err_cond);
+            builder->create_call(scope.find("neg_idx_except"), {});
+            // 本来应该是输出一个unreachable，但是LightIR里面未实现这个，换成无条件跳转，实际上此时程序已经退出了
+            builder->create_br(normal_cond);
+            builder->set_insert_point(normal_cond);
+            bottom_up_stack.push(builder->create_gep(var, {ConstantInt::get(0, module.get()), subscrip}));
+        }
     }else
     {
         bottom_up_stack.push(var);
