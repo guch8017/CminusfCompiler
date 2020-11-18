@@ -5,6 +5,20 @@
 // You can define global variables here
 // to store state
 
+/// 更详细的类型分类
+/// 修改注释：添加Const标志，用于固定值的预计算。
+/// 涉及到的功能：优化输出结构（固定的结果编译时进行计算）、编译时下标越界检查、
+typedef enum CM_TYPE{
+    CM_EMPTY = 0,
+    CM_INT = 0x1,
+    CM_FLOAT = 0x2,
+    CM_BOOL = 0x4,
+    CM_ERR = 0x8,
+    CM_VOID = 0x10,
+    CM_ARRAY = 0x20,
+    CM_CONST = 0x40
+} CM_TYPE;
+
 class TypeScope {
     /**
      * 重写的Scope，用于进行类型计算
@@ -12,32 +26,31 @@ class TypeScope {
 public:
     TypeScope(){
         enter();
-        push("input", TYPE_INT, false);
-        push("output", TYPE_VOID, false);
-        push("outputFloat", TYPE_VOID, false);
-        push("neg_idx_except", TYPE_VOID, false);
+        push("input", CM_INT);
+        push("output", CM_VOID);
+        push("outputFloat", CM_VOID);
+        push("neg_idx_except", CM_VOID);
     }
     void enter() {inner.push_back({});}
     void exit() {inner.pop_back();}
-    bool push(std::string name, CminusType ty, bool isArray){
-        return push(name, std::make_tuple(ty, isArray));
-    }
-    bool push(std::string name, std::tuple<CminusType, bool> val) {
+    bool push(std::string name, int val) {
         auto result = inner[inner.size() - 1].insert({name, val});
         return result.second;
     }
-    std::tuple<CminusType, bool> find(std::string name) {
+    int find(std::string name) {
         for (auto s = inner.rbegin(); s!= inner.rend();s++) {
             auto iter = s->find(name);
             if (iter != s->end()) {
                 return iter->second;
             }
         }
-        return std::make_tuple(TYPE_VOID, true);
+        return CM_ERR;
     }
 private:
-    std::vector<std::map<std::string, std::tuple<CminusType, bool>>> inner;
+    std::vector<std::map<std::string, int>> inner;
 };
+
+
 
 int block_counter = 0;
 /// 函数参数类型
@@ -50,7 +63,7 @@ Function* function = nullptr;
 /// 这两个栈中的元素保持对应，即类型栈栈顶代表的类型即为值的类型
 /// 注意：由于CminusType中没有i1的枚举，故此实现中i1采用TYPE_VOID进行存储
 std::stack<Value*> bottom_up_stack;  // 值传递栈
-std::stack<CminusType> type_stack;   // 类型栈
+std::stack<int> type_stack;   // 类型栈
 
 /// 根据变量名获取变量的类型
 TypeScope t_scope;
@@ -98,6 +111,23 @@ inline std::string GetNewBlockName(){
     return std::to_string(++block_counter);
 }
 
+int CminusType2CM_TYPE(CminusType cm, bool is_array, bool is_const){
+    if(is_array && is_const){
+        printf("Warning: array and const flag are both set to true. There may be a bug in the code!");
+    }
+    CM_TYPE array_flag = (is_array) ? CM_ARRAY : CM_EMPTY;
+    CM_TYPE const_flag = (is_const) ? CM_CONST : CM_EMPTY;
+    CM_TYPE ty;
+    if(cm == TYPE_VOID){
+        ty = CM_VOID;
+    }else if(cm == TYPE_FLOAT){
+        ty = CM_FLOAT;
+    }else{
+        ty = CM_INT;
+    }
+    return (ty | array_flag | const_flag);
+}
+
 void CminusfBuilder::visit(ASTProgram &node) {
     for (auto n : node.declarations)
     {
@@ -110,21 +140,23 @@ void CminusfBuilder::visit(ASTNum &node) {
     {
     case TYPE_INT:
         bottom_up_stack.push(ConstantInt::get(node.i_val, module.get()));
-        type_stack.push(TYPE_INT);
         break;
     case TYPE_FLOAT:
         bottom_up_stack.push(ConstantFP::get(node.f_val, module.get()));
-        type_stack.push(TYPE_FLOAT);
         break;
     default:
         throw "Unknown declaration type";
     }
+    type_stack.push(CminusType2CM_TYPE(node.type, false, true));
 }
 
 void CminusfBuilder::visit(ASTVarDeclaration &node) { 
     Type* decl_type = GetDeclType(node.type, module.get());
     Type* var_type = nullptr;
     Value* var = nullptr;
+    if(node.type == TYPE_VOID){
+        throw "variable has incomplete type 'void'";
+    }
     if(node.num != nullptr){
         // Array Type
         node.num->accept(*this);
@@ -154,7 +186,7 @@ void CminusfBuilder::visit(ASTVarDeclaration &node) {
     if(!scope.push(node.id, var)){
         throw "Redefinition of '" + node.id + '\'';
     }
-    t_scope.push(node.id, node.type, node.num != nullptr);
+    t_scope.push(node.id, CminusType2CM_TYPE(node.type, node.num != nullptr, false));
 }
 
 void CminusfBuilder::visit(ASTFunDeclaration &node) {
@@ -166,8 +198,7 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
     FunctionType* f_type = FunctionType::get(ret_type, param_list);
     Function* func = Function::create(f_type, node.id, module.get());
     scope.push(node.id, func);
-    // 知道是函数，后面的isArray随便给个值
-    t_scope.push(node.id, node.type, false);
+    t_scope.push(node.id, CminusType2CM_TYPE(node.type, false, false));
     function = func;
     scope.enter();t_scope.enter();
     int i = 0;
@@ -175,7 +206,7 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
         if(!scope.push(node.params[i]->id, arg)){
             throw "Redefinition of '" + node.params[i]->id + '\'';
         }
-        t_scope.push(node.params[i]->id, node.params[i]->type, node.params[i]->isarray);
+        t_scope.push(node.params[i]->id, CminusType2CM_TYPE(node.params[i]->type, node.params[i]->isarray, false));
         ++i;
     }
     builder->set_insert_point(BasicBlock::create(module.get(), GetNewBlockName(), function));
@@ -233,10 +264,11 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
     node.expression->accept(*this);
     // 运算结果需要压入栈中
     Value* expression_val = bottom_up_stack.top();
-    CminusType expression_type = type_stack.top();
-    if(!dynamic_cast<CmpInst*>(expression_val)){
+    int expression_type = type_stack.top();
+    // TODO: Array/Void类型检查、恒成立/不成立情况判断
+    if(!(expression_type & CM_BOOL)){
         // 不是i1类型需要进行转换
-        if(expression_type == TYPE_INT)
+        if(expression_type & CM_INT)
             expression_val = builder->create_icmp_ne(expression_val, ConstantInt::get(0, module.get()));
         else
             expression_val = builder->create_fcmp_ne(expression_val, ConstantFP::get(0, module.get()));
@@ -273,9 +305,9 @@ void CminusfBuilder::visit(ASTIterationStmt &node) {
     builder->set_insert_point(condBlock);
     node.expression->accept(*this);
     Value* cond = bottom_up_stack.top();
-    CminusType condType = type_stack.top();
-    if(!dynamic_cast<CmpInst*>(cond)){
-        if(condType == TYPE_INT)
+    int condType = type_stack.top();
+    if(!(condType & CM_BOOL)){
+        if(condType & CM_INT)
             cond = builder->create_icmp_ne(cond, ConstantInt::get(0, module.get()));
         else
             cond = builder->create_fcmp_ne(cond, ConstantFP::get(0, module.get()));
@@ -299,10 +331,10 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
     if(node.expression){
         node.expression->accept(*this);
         Value* expr_val = bottom_up_stack.top();
-        CminusType expr_type = type_stack.top();
-        if(function->get_return_type()->is_integer_type() && expr_type == TYPE_FLOAT){
+        int expr_type = type_stack.top();
+        if(function->get_return_type()->is_integer_type() && (expr_type & CM_FLOAT)){
             expr_val = builder->create_fptosi(expr_val, Type::get_int32_type(module.get()));
-        }else if(function->get_return_type()->is_float_type() && expr_type == TYPE_INT){
+        }else if(function->get_return_type()->is_float_type() && (expr_type & CM_INT)){
             expr_val = builder->create_sitofp(expr_val, Type::get_int32_type(module.get()));
         }
         builder->create_ret(expr_val);
@@ -319,33 +351,31 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
 void CminusfBuilder::visit(ASTVar &node) { 
     Value* var = scope.find(node.id);
     if(!var){
-        throw "Use of undeclared identifier '" + node.id + '\'';
+        throw "use of undeclared identifier '" + node.id + '\'';
     }
     if(dynamic_cast<Function*>(var)){
         throw "non-object type is not assignable";
     }
-    CminusType var_t;
-    bool var_is_arr;
-    std::tie(var_t, var_is_arr) = t_scope.find(node.id);
+    int var_t = t_scope.find(node.id);
     // Type* var_type = var->get_type();
     // printf("%s: %d\n", node.id.c_str(), var_type->get_type_id());
     // 1: 全部为指针类型，对是否指向数组需要额外判断，实验没要求先PASS
     // 2: 加了个TypeScope可以判断了～
-    if(!var_is_arr && node.expression != nullptr){
-        throw "Subscripted value is not an array";
+    if(!(var_t & CM_ARRAY) && node.expression != nullptr){
+        throw "subscripted value is not an array";
     }
-    if(var_is_arr && node.expression == nullptr){
-        throw "Array type is not assignable";
+    if((var_t & CM_ARRAY) && node.expression == nullptr){
+        throw "array type is not assignable";
     }
     
     if(node.expression){
         node.expression->accept(*this);
         Value* subscrip = bottom_up_stack.top();
-        CminusType subscripType = type_stack.top();
+        int subscripType = type_stack.top();
         bottom_up_stack.pop();
         type_stack.pop();
         // INT 类型检查
-        if(subscripType != TYPE_INT){
+        if(!(subscripType & CM_INT)){
             throw "index of array should be an integer";
         }
         // 小于0判断（运行时）
@@ -370,21 +400,21 @@ void CminusfBuilder::visit(ASTAssignExpression &node) {
     node.var->accept(*this);
     Value* store_ptr = bottom_up_stack.top();
     bottom_up_stack.pop();
-    CminusType var_type = type_stack.top();
+    int var_type = type_stack.top();
     type_stack.pop();
     node.expression->accept(*this);
     Value* store_val = bottom_up_stack.top();
-    CminusType val_type = type_stack.top();
+    int val_type = type_stack.top();
     if(val_type != var_type){
         bottom_up_stack.pop();
         type_stack.pop();
-        if(val_type == TYPE_VOID){
-            val_type = TYPE_INT;
+        if(val_type & CM_BOOL){
+            val_type = val_type & (~CM_BOOL) & CM_INT;
             store_val = builder->create_zext(store_val, Type::get_int32_type(module.get()));
         }
-        if(val_type == TYPE_INT && var_type == TYPE_FLOAT){
+        if((val_type & CM_INT) && (var_type & CM_FLOAT)){
             store_val = builder->create_sitofp(store_val, Type::get_float_type(module.get()));
-        }else if(val_type == TYPE_FLOAT && var_type == TYPE_INT){
+        }else if((val_type & CM_FLOAT) && (var_type & CM_INT)){
             store_val = builder->create_fptosi(store_val, Type::get_int32_type(module.get()));
         }
         bottom_up_stack.push(store_val);
@@ -426,7 +456,7 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
         default:
             throw "Unknown relop type";
         }
-        type_stack.push(TYPE_VOID);
+        type_stack.push(CM_BOOL);
     }
 }
 
@@ -436,29 +466,29 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
         return;
     }else{
         Value* term_val = bottom_up_stack.top();
-        CminusType term_ty = type_stack.top();
+        int term_ty = type_stack.top();
         bottom_up_stack.pop();
         type_stack.pop();
         node.additive_expression->accept(*this);
         Value* addi_val = bottom_up_stack.top();
-        CminusType addi_ty = type_stack.top();
+        int addi_ty = type_stack.top();
         bottom_up_stack.pop();
         type_stack.pop();
-        CminusType finalType;
-        if(term_ty == TYPE_VOID){
+        int finalType;
+        if(term_ty & CM_BOOL){
             term_val = builder->create_zext(term_val, Type::get_int32_type(module.get()));
-            term_ty = TYPE_INT;
+            term_ty = term_ty & (~CM_BOOL) & CM_INT;
         }
-        if(addi_ty == TYPE_VOID){
+        if(addi_ty == CM_BOOL){
             addi_val = builder->create_zext(addi_val, Type::get_int32_type(module.get()));
-            addi_ty = TYPE_INT;
+            addi_ty = addi_ty & (~CM_BOOL) & CM_INT;
         }
-        if(term_ty == TYPE_FLOAT || addi_ty == TYPE_FLOAT){
-            finalType = TYPE_FLOAT;
-            if(term_ty == TYPE_INT){
+        if(term_ty & CM_FLOAT || addi_ty & CM_FLOAT){
+            finalType = CM_FLOAT;
+            if(term_ty & CM_INT){
                 term_val = builder->create_sitofp(term_val, Type::get_float_type(module.get()));
             }
-            if(addi_ty == TYPE_INT){
+            if(addi_ty & CM_INT){
                 addi_val = builder->create_sitofp(addi_val, Type::get_float_type(module.get()));
             }
             if(node.op == OP_PLUS){
@@ -467,7 +497,7 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
                 bottom_up_stack.push(builder->create_fsub(addi_val, term_val));
             }
         }else{
-            finalType = TYPE_INT;
+            finalType = CM_INT;
             if(node.op == OP_PLUS){
                 bottom_up_stack.push(builder->create_iadd(addi_val, term_val));
             }else{
@@ -493,30 +523,31 @@ void CminusfBuilder::visit(ASTTerm &node) {
         return;
     }else{
         Value* factor_val = bottom_up_stack.top();
-        CminusType factor_ty = type_stack.top();
+        int factor_ty = type_stack.top();
         bottom_up_stack.pop();
         type_stack.pop();
         node.term->accept(*this);
         Value* term_val = bottom_up_stack.top();
-        CminusType term_ty = type_stack.top();
+        int term_ty = type_stack.top();
         bottom_up_stack.pop();
         type_stack.pop();
 
-        CminusType finalType;
-        if(term_ty == TYPE_VOID){
+
+        int finalType;
+        if(term_ty & CM_BOOL){
             term_val = builder->create_zext(term_val, Type::get_int32_type(module.get()));
-            term_ty = TYPE_INT;
+            term_ty = term_ty & (~CM_BOOL) & CM_INT;
         }
-        if(factor_ty == TYPE_VOID){
+        if(factor_ty & CM_BOOL){
             factor_val = builder->create_zext(factor_val, Type::get_int32_type(module.get()));
-            factor_ty = TYPE_INT;
+            factor_ty = factor_ty & (~CM_BOOL) & CM_INT;
         }
-        if(term_ty == TYPE_FLOAT || factor_ty == TYPE_FLOAT){
-            finalType = TYPE_FLOAT;
-            if(term_ty == TYPE_INT){
+        if(term_ty & CM_FLOAT || factor_ty & CM_FLOAT){
+            finalType = CM_FLOAT;
+            if(term_ty & CM_INT){
                 term_val = builder->create_sitofp(term_val, Type::get_float_type(module.get()));
             }
-            if(factor_ty == TYPE_INT){
+            if(factor_ty & CM_INT){
                 factor_val = builder->create_sitofp(factor_val, Type::get_float_type(module.get()));
             }
             if(node.op == OP_MUL){
@@ -525,7 +556,7 @@ void CminusfBuilder::visit(ASTTerm &node) {
                 bottom_up_stack.push(builder->create_fdiv(term_val, factor_val));
             }
         }else{
-            finalType = TYPE_INT;
+            finalType = CM_INT;
             if(node.op == OP_MUL){
                 bottom_up_stack.push(builder->create_imul(term_val, factor_val));
             }else{
@@ -545,9 +576,7 @@ void CminusfBuilder::visit(ASTCall &node) {
     if(c_func == nullptr){
         throw "called object type is not a function";
     }
-    CminusType ret_t;
-    bool t;
-    std::tie(ret_t, t) = t_scope.find(node.id);
+    int ret_t = t_scope.find(node.id);
     std::vector<Value*> params;
     if(node.args.size() != c_func->get_args().size()){
         throw "function missing required positional argument";
@@ -557,14 +586,14 @@ void CminusfBuilder::visit(ASTCall &node) {
         auto expr = node.args[i++];
         expr->accept(*this);
         Value* exprVal = bottom_up_stack.top();
-        CminusType exprType = type_stack.top();
-        if(exprType == TYPE_VOID){
+        int exprType = type_stack.top();
+        if(exprType & CM_BOOL){
             exprVal = builder->create_zext(exprVal, Type::get_int32_type(module.get()));
-            exprType = TYPE_INT;
+            exprType = exprType & (~CM_BOOL) & CM_INT;
         }
-        if(exprType == TYPE_INT && paramType->get_type()->is_float_type()){
+        if(exprType & CM_INT && paramType->get_type()->is_float_type()){
             exprVal = builder->create_sitofp(exprVal, Type::get_float_type(module.get()));
-        }else if(exprType == TYPE_FLOAT && paramType->get_type()->is_integer_type()){
+        }else if(exprType & CM_FLOAT && paramType->get_type()->is_integer_type()){
             exprVal = builder->create_fptosi(exprVal, Type::get_int32_type(module.get()));
         }
         params.push_back(exprVal);
