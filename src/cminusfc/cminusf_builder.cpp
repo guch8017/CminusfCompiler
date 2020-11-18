@@ -284,7 +284,26 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
     LoadFromPointerIfNeeded(builder);
     Value* expression_val = bottom_up_stack.top();
     int expression_type = type_stack.top();
-    // TODO: Array/Void类型检查、恒成立/不成立情况判断
+    bottom_up_stack.pop();
+    type_stack.pop();
+    // TODO: Array/Void类型检查
+    // 恒成立/不成立情况判断
+    if(expression_type & CM_CONST){
+        bool is_true;
+        if(expression_type & CM_INT){
+            is_true = dynamic_cast<ConstantInt*>(expression_val)->get_value() != 0;
+        }else if(expression_type & CM_FLOAT){
+            is_true = dynamic_cast<ConstantFP*>(expression_val)->get_value() != 0;
+        }
+        if(is_true){
+            node.if_statement->accept(*this);
+        }else{
+            if(node.else_statement != nullptr){
+                node.else_statement->accept(*this);
+            }
+        }
+        return;
+    }
     if(!(expression_type & CM_BOOL)){
         // 不是i1类型需要进行转换
         if(expression_type & CM_INT)
@@ -292,8 +311,7 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
         else
             expression_val = builder->create_fcmp_ne(expression_val, ConstantFP::get(0, module.get()));
     }
-    bottom_up_stack.pop();
-    type_stack.pop();
+
     BasicBlock* ifBlock = BasicBlock::create(module.get(), GetNewBlockName(), function);
     BasicBlock* elseBlock = nullptr;
     // 调整了block创建顺序，使生成的代码更好看
@@ -316,16 +334,38 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
     builder->set_insert_point(finallyBlock);
 }
 
-void CminusfBuilder::visit(ASTIterationStmt &node) { 
+void CminusfBuilder::visit(ASTIterationStmt &node) {
     BasicBlock* condBlock = BasicBlock::create(module.get(), GetNewBlockName(), function);
-    BasicBlock* whileBlock = BasicBlock::create(module.get(), GetNewBlockName(), function);
-    BasicBlock* finallyBlock = BasicBlock::create(module.get(), GetNewBlockName(), function);
     builder->create_br(condBlock);
     builder->set_insert_point(condBlock);
     node.expression->accept(*this);
     LoadFromPointerIfNeeded(builder);
     Value* cond = bottom_up_stack.top();
     int condType = type_stack.top();
+    bottom_up_stack.pop();
+    type_stack.pop();
+    // 恒成立/不成立情况判断
+    if(condType & CM_CONST){
+        bool is_true;
+        if(condType & CM_INT){
+            is_true = dynamic_cast<ConstantInt*>(cond)->get_value() != 0;
+        }else if(condType & CM_FLOAT){
+            is_true = dynamic_cast<ConstantFP*>(cond)->get_value() != 0;
+        }
+        if(is_true){
+            // 无限循环
+            // ** 注意：若条件恒成立则判断块必为空，直接利用判断块进行循环即可
+            node.statement->accept(*this);
+            builder->create_br(condBlock);
+            // 后面均是不可达代码，直接丢弃
+            builder->set_insert_point(__bb);
+        }else{
+            // 恒假，当作循环体不存在
+        }
+        return;
+    }
+    BasicBlock* whileBlock = BasicBlock::create(module.get(), GetNewBlockName(), function);
+    BasicBlock* finallyBlock = BasicBlock::create(module.get(), GetNewBlockName(), function);
     if(!(condType & CM_BOOL)){
         if(condType & CM_INT)
             cond = builder->create_icmp_ne(cond, ConstantInt::get(0, module.get()));
@@ -333,8 +373,6 @@ void CminusfBuilder::visit(ASTIterationStmt &node) {
             cond = builder->create_fcmp_ne(cond, ConstantFP::get(0, module.get()));
         
     }
-    bottom_up_stack.pop();
-    type_stack.pop();
     builder->create_cond_br(cond, whileBlock, finallyBlock);
     builder->set_insert_point(whileBlock);
     node.statement->accept(*this);
