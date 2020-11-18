@@ -145,7 +145,7 @@ void CminusfBuilder::visit(ASTNum &node) {
         bottom_up_stack.push(ConstantFP::get(node.f_val, module.get()));
         break;
     default:
-        throw "Unknown declaration type";
+        throw "unknown CminusType";
     }
     type_stack.push(CminusType2CM_TYPE(node.type, false, true));
 }
@@ -204,7 +204,7 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
     int i = 0;
     for(auto arg: function->get_args()){
         if(!scope.push(node.params[i]->id, arg)){
-            throw "Redefinition of '" + node.params[i]->id + '\'';
+            throw "redefinition of '" + node.params[i]->id + '\'';
         }
         t_scope.push(node.params[i]->id, CminusType2CM_TYPE(node.params[i]->type, node.params[i]->isarray, false));
         ++i;
@@ -405,21 +405,40 @@ void CminusfBuilder::visit(ASTAssignExpression &node) {
     node.expression->accept(*this);
     Value* store_val = bottom_up_stack.top();
     int val_type = type_stack.top();
-    if(val_type != var_type){
-        bottom_up_stack.pop();
-        type_stack.pop();
+    bottom_up_stack.pop();
+    type_stack.pop();
+    // Start expression 常数优化
+    if(val_type & CM_CONST){
+        if(val_type & CM_INT && var_type & CM_FLOAT){
+            val_type = (val_type & (~CM_INT)) | CM_FLOAT;
+            ConstantInt* value = dynamic_cast<ConstantInt*>(store_val);
+            int numeric = value->get_value();
+            store_val = ConstantFP::get((float)numeric, module.get());
+        }else if(val_type & CM_FLOAT && var_type & CM_INT){
+            val_type = (val_type & (~CM_FLOAT)) | CM_INT;
+            ConstantFP* value = dynamic_cast<ConstantFP*>(store_val);
+            float numeric = value->get_value();
+            store_val = ConstantInt::get((int)numeric, module.get());
+        }
+    }
+    // End expression常数优化
+    else if(val_type != var_type){
+        
         if(val_type & CM_BOOL){
-            val_type = val_type & (~CM_BOOL) & CM_INT;
+            val_type = (val_type & (~CM_BOOL)) | CM_INT;
             store_val = builder->create_zext(store_val, Type::get_int32_type(module.get()));
         }
         if((val_type & CM_INT) && (var_type & CM_FLOAT)){
+            val_type = (val_type & (~CM_INT)) | CM_FLOAT;
             store_val = builder->create_sitofp(store_val, Type::get_float_type(module.get()));
         }else if((val_type & CM_FLOAT) && (var_type & CM_INT)){
+            val_type = (val_type & (~CM_INT)) | CM_FLOAT;
             store_val = builder->create_fptosi(store_val, Type::get_int32_type(module.get()));
         }
-        bottom_up_stack.push(store_val);
-        type_stack.push(var_type);
+        
     }
+    bottom_up_stack.push(store_val);
+    type_stack.push(val_type);
     builder->create_store(store_val, store_ptr);
 }
 
@@ -474,14 +493,47 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
         int addi_ty = type_stack.top();
         bottom_up_stack.pop();
         type_stack.pop();
+        // expression 常数优化，暂时不考虑i1为常量的情况
+        if(term_ty & CM_CONST && addi_ty & CM_CONST){
+            if(term_ty & CM_INT && addi_ty & CM_INT){
+                int t_val = dynamic_cast<ConstantInt*>(term_val)->get_value();
+                int a_val = dynamic_cast<ConstantInt*>(addi_val)->get_value();
+                if(node.op == OP_PLUS){
+                    bottom_up_stack.push(ConstantInt::get(t_val + a_val, module.get()));
+                }else{
+                    bottom_up_stack.push(ConstantInt::get(a_val - t_val, module.get()));
+                }
+                type_stack.push(CM_INT | CM_CONST);
+            }else{
+                float t_val, a_val;
+                if(term_ty & CM_INT){
+                    t_val = dynamic_cast<ConstantInt*>(term_val)->get_value();
+                }else{
+                    t_val = dynamic_cast<ConstantFP*>(term_val)->get_value();
+                }
+                if(addi_ty & CM_INT){
+                    a_val = dynamic_cast<ConstantInt*>(addi_val)->get_value();
+                }else{
+                    a_val = dynamic_cast<ConstantFP*>(addi_val)->get_value();
+                }
+                if(node.op == OP_PLUS){
+                    bottom_up_stack.push(ConstantFP::get(t_val + a_val, module.get()));
+                }else{
+                    bottom_up_stack.push(ConstantFP::get(a_val - t_val, module.get()));
+                }
+                type_stack.push(CM_FLOAT | CM_CONST);
+            }
+            return;
+        }
+        // End 常数化优化
         int finalType;
         if(term_ty & CM_BOOL){
             term_val = builder->create_zext(term_val, Type::get_int32_type(module.get()));
-            term_ty = term_ty & (~CM_BOOL) & CM_INT;
+            term_ty = (term_ty & (~CM_BOOL)) | CM_INT;
         }
         if(addi_ty == CM_BOOL){
             addi_val = builder->create_zext(addi_val, Type::get_int32_type(module.get()));
-            addi_ty = addi_ty & (~CM_BOOL) & CM_INT;
+            addi_ty = (addi_ty & (~CM_BOOL)) | CM_INT;
         }
         if(term_ty & CM_FLOAT || addi_ty & CM_FLOAT){
             finalType = CM_FLOAT;
@@ -532,15 +584,55 @@ void CminusfBuilder::visit(ASTTerm &node) {
         bottom_up_stack.pop();
         type_stack.pop();
 
+        // expression 常数优化，暂时不考虑i1为常量的情况
+        if(term_ty & CM_CONST && factor_ty & CM_CONST){
+            if(term_ty & CM_INT && factor_ty & CM_INT){
+                int f_val = dynamic_cast<ConstantInt*>(factor_val)->get_value();
+                int t_val = dynamic_cast<ConstantInt*>(term_val)->get_value();
+                
+                if(node.op == OP_MUL){
+                    bottom_up_stack.push(ConstantInt::get(t_val * f_val, module.get()));
+                }else{
+                    if(f_val == 0){
+                        throw "division by zero error (compile time)";
+                    }
+                    bottom_up_stack.push(ConstantInt::get(t_val / f_val, module.get()));
+                }
+                type_stack.push(CM_INT | CM_CONST);
+            }else{
+                float t_val, f_val;
+                if(term_ty & CM_INT){
+                    t_val = dynamic_cast<ConstantInt*>(term_val)->get_value();
+                }else{
+                    t_val = dynamic_cast<ConstantFP*>(term_val)->get_value();
+                }
+                if(factor_ty & CM_INT){
+                    f_val = dynamic_cast<ConstantInt*>(factor_val)->get_value();
+                }else{
+                    f_val = dynamic_cast<ConstantFP*>(factor_val)->get_value();
+                }
+                if(node.op == OP_MUL){
+                    bottom_up_stack.push(ConstantFP::get(t_val * f_val, module.get()));
+                }else{
+                    if(f_val == 0){
+                        throw "division by zero error (compile time)";
+                    }
+                    bottom_up_stack.push(ConstantFP::get(t_val / f_val, module.get()));
+                }
+                type_stack.push(CM_FLOAT | CM_CONST);
+            }
+            return;
+        }
+        // End 常数化优化
 
         int finalType;
         if(term_ty & CM_BOOL){
             term_val = builder->create_zext(term_val, Type::get_int32_type(module.get()));
-            term_ty = term_ty & (~CM_BOOL) & CM_INT;
+            term_ty = (term_ty & (~CM_BOOL)) | CM_INT;
         }
         if(factor_ty & CM_BOOL){
             factor_val = builder->create_zext(factor_val, Type::get_int32_type(module.get()));
-            factor_ty = factor_ty & (~CM_BOOL) & CM_INT;
+            factor_ty = (factor_ty & (~CM_BOOL)) | CM_INT;
         }
         if(term_ty & CM_FLOAT || factor_ty & CM_FLOAT){
             finalType = CM_FLOAT;
@@ -589,7 +681,7 @@ void CminusfBuilder::visit(ASTCall &node) {
         int exprType = type_stack.top();
         if(exprType & CM_BOOL){
             exprVal = builder->create_zext(exprVal, Type::get_int32_type(module.get()));
-            exprType = exprType & (~CM_BOOL) & CM_INT;
+            exprType = (exprType & (~CM_BOOL)) | CM_INT;
         }
         if(exprType & CM_INT && paramType->get_type()->is_float_type()){
             exprVal = builder->create_sitofp(exprVal, Type::get_float_type(module.get()));
