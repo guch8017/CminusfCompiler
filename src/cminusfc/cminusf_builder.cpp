@@ -489,33 +489,108 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
     }else{
         LoadFromPointerIfNeeded(builder);
         Value* l_val = bottom_up_stack.top();
+        int l_type = type_stack.top();
         bottom_up_stack.pop();
+        type_stack.pop();
         node.additive_expression_r->accept(*this);
         LoadFromPointerIfNeeded(builder);
         Value* r_val = bottom_up_stack.top();
+        int r_type = type_stack.top();
         bottom_up_stack.pop();
-        switch (node.op)
-        {
-        case OP_LE:
-            bottom_up_stack.push(builder->create_icmp_le(l_val, r_val));
-            break;
-        case OP_LT:
-            bottom_up_stack.push(builder->create_icmp_lt(l_val, r_val));
-            break;
-        case OP_GT:
-            bottom_up_stack.push(builder->create_icmp_gt(l_val, r_val));
-            break;
-        case OP_GE:
-            bottom_up_stack.push(builder->create_icmp_ge(l_val, r_val));
-            break;
-        case OP_EQ:
-            bottom_up_stack.push(builder->create_icmp_eq(l_val, r_val));
-            break;
-        case OP_NEQ:
-            bottom_up_stack.push(builder->create_icmp_ne(l_val, r_val));
-            break;
-        default:
-            throw "Unknown relop type";
+        type_stack.pop();
+        if(l_type & CM_CONST && r_type & CM_CONST){
+            float l_v, r_v;
+            if(l_type & CM_INT){
+                l_v = dynamic_cast<ConstantInt*>(l_val)->get_value();
+            }else{
+                l_v = dynamic_cast<ConstantFP*>(l_val)->get_value();
+            }
+            if(r_type & CM_INT){
+                r_v = dynamic_cast<ConstantInt*>(r_val)->get_value();
+            }else{
+                r_v = dynamic_cast<ConstantFP*>(r_val)->get_value();
+            }
+            switch (node.op)
+            {
+            case OP_LE:
+                bottom_up_stack.push(ConstantInt::get(l_v <= r_v, module.get()));
+                break;
+            case OP_LT:
+                bottom_up_stack.push(ConstantInt::get(l_v < r_v, module.get()));
+                break;
+            case OP_GT:
+                bottom_up_stack.push(ConstantInt::get(l_v > r_v, module.get()));
+                break;
+            case OP_GE:
+                bottom_up_stack.push(ConstantInt::get(l_v >= r_v, module.get()));
+                break;
+            case OP_EQ:
+                bottom_up_stack.push(ConstantInt::get(l_v == r_v, module.get()));
+                break;
+            case OP_NEQ:
+                bottom_up_stack.push(ConstantInt::get(l_v != r_v, module.get()));
+                break;
+            default:
+                throw "Unknown relop type";
+            }
+            type_stack.push(CM_INT | CM_CONST);
+            return;
+        }
+        
+        if(l_type & CM_INT && r_type & CM_INT){
+            switch (node.op)
+            {
+            case OP_LE:
+                bottom_up_stack.push(builder->create_icmp_le(l_val, r_val));
+                break;
+            case OP_LT:
+                bottom_up_stack.push(builder->create_icmp_lt(l_val, r_val));
+                break;
+            case OP_GT:
+                bottom_up_stack.push(builder->create_icmp_gt(l_val, r_val));
+                break;
+            case OP_GE:
+                bottom_up_stack.push(builder->create_icmp_ge(l_val, r_val));
+                break;
+            case OP_EQ:
+                bottom_up_stack.push(builder->create_icmp_eq(l_val, r_val));
+                break;
+            case OP_NEQ:
+                bottom_up_stack.push(builder->create_icmp_ne(l_val, r_val));
+                break;
+            default:
+                throw "Unknown relop type";
+            }
+        }else{
+            if(l_type & CM_INT){
+                l_val = builder->create_sitofp(l_val, Type::get_float_type(module.get()));
+            }
+            if(r_type & CM_INT){
+                r_val = builder->create_sitofp(r_val, Type::get_float_type(module.get()));
+            }
+            switch (node.op)
+            {
+            case OP_LE:
+                bottom_up_stack.push(builder->create_fcmp_le(l_val, r_val));
+                break;
+            case OP_LT:
+                bottom_up_stack.push(builder->create_fcmp_lt(l_val, r_val));
+                break;
+            case OP_GT:
+                bottom_up_stack.push(builder->create_fcmp_gt(l_val, r_val));
+                break;
+            case OP_GE:
+                bottom_up_stack.push(builder->create_fcmp_ge(l_val, r_val));
+                break;
+            case OP_EQ:
+                bottom_up_stack.push(builder->create_fcmp_eq(l_val, r_val));
+                break;
+            case OP_NEQ:
+                bottom_up_stack.push(builder->create_fcmp_ne(l_val, r_val));
+                break;
+            default:
+                throw "Unknown relop type";
+            }
         }
         type_stack.push(CM_BOOL);
     }
