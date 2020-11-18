@@ -213,9 +213,18 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
     int i = 0;
     builder->set_insert_point(BasicBlock::create(module.get(), GetNewBlockName(), function));
     for(auto arg: function->get_args()){
+        if(node.params[i]->type == TYPE_VOID){
+            throw "void type only allowed for function results";
+        }
         if(node.params[i]->isarray){
             if(node.params[i]->type == TYPE_INT){
                 AllocaInst* a_var = builder->create_alloca(Type::get_int32_ptr_type(module.get()));
+                builder->create_store(arg, a_var);
+                if(!scope.push(node.params[i]->id, a_var)){
+                    throw "redefinition of '" + node.params[i]->id + '\'';
+                }
+            }else if(node.params[i]->type == TYPE_FLOAT){
+                AllocaInst* a_var = builder->create_alloca(Type::get_float_ptr_type(module.get()));
                 builder->create_store(arg, a_var);
                 if(!scope.push(node.params[i]->id, a_var)){
                     throw "redefinition of '" + node.params[i]->id + '\'';
@@ -225,6 +234,7 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
         else if(!scope.push(node.params[i]->id, arg)){
             throw "redefinition of '" + node.params[i]->id + '\'';
         }
+        
         t_scope.push(node.params[i]->id, CminusType2CM_TYPE(node.params[i]->type) | ((node.params[i]->isarray) ? CM_ARRAY : CM_EMPTY) | CM_PARAM);
         ++i;
     }
@@ -257,6 +267,8 @@ void CminusfBuilder::visit(ASTParam &node) {
             param_list.push_back(Type::get_float_ptr_type(module.get()));
         else
             param_list.push_back(Type::get_float_type(module.get()));
+    }else{
+        throw "void type only allowed for function results";
     }
 }
 
@@ -286,7 +298,10 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
     int expression_type = type_stack.top();
     bottom_up_stack.pop();
     type_stack.pop();
-    // TODO: Array/Void类型检查
+    // Array/Void类型检查
+    if(expression_type & CM_VOID || expression_type & CM_VOID){
+        throw "void/array type can is not compareable";;
+    }
     // 恒成立/不成立情况判断
     if(expression_type & CM_CONST){
         bool is_true;
@@ -344,6 +359,9 @@ void CminusfBuilder::visit(ASTIterationStmt &node) {
     int condType = type_stack.top();
     bottom_up_stack.pop();
     type_stack.pop();
+    if(condType & CM_VOID || condType & CM_ARRAY){
+        throw "void/array type can is not compareable";
+    }
     // 恒成立/不成立情况判断
     if(condType & CM_CONST){
         bool is_true;
@@ -391,6 +409,9 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
         LoadFromPointerIfNeeded(builder);
         Value* expr_val = bottom_up_stack.top();
         int expr_type = type_stack.top();
+        if(expr_type & CM_ARRAY || expr_type & CM_VOID){
+            throw "function should not return void/array type";
+        }
         if(function->get_return_type()->is_integer_type() && (expr_type & CM_FLOAT)){
             expr_val = builder->create_fptosi(expr_val, Type::get_int32_type(module.get()));
         }else if(function->get_return_type()->is_float_type() && (expr_type & CM_INT)){
@@ -466,11 +487,13 @@ void CminusfBuilder::visit(ASTVar &node) {
         }else{
             bottom_up_stack.push(builder->create_gep(var, {ConstantInt::get(0, module.get()), subscrip}));
         }
+        type_stack.push((var_t & (~CM_ARRAY)));
     }else
     {
         bottom_up_stack.push(var);
+        type_stack.push(var_t);
     }
-    type_stack.push(var_t);
+    
 }
 
 void CminusfBuilder::visit(ASTAssignExpression &node) { 
@@ -485,6 +508,9 @@ void CminusfBuilder::visit(ASTAssignExpression &node) {
     int val_type = type_stack.top();
     bottom_up_stack.pop();
     type_stack.pop();
+    if(val_type & CM_VOID || val_type & CM_ARRAY){
+        throw "void/array type can not be assigned to other variable";
+    }
     // Start expression 常数优化
     if(val_type & CM_CONST){
         if(val_type & CM_INT && var_type & CM_FLOAT){
@@ -534,6 +560,9 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
         LoadFromPointerIfNeeded(builder);
         Value* r_val = bottom_up_stack.top();
         int r_type = type_stack.top();
+        if(l_type & CM_ARRAY || l_type & CM_VOID || r_type & CM_ARRAY || r_type & CM_VOID){
+            throw "void/array type is not compareable";
+        }
         bottom_up_stack.pop();
         type_stack.pop();
         if(l_type & CM_CONST && r_type & CM_CONST){
@@ -650,8 +679,8 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
         int addi_ty = type_stack.top();
         bottom_up_stack.pop();
         type_stack.pop();
-        if(addi_ty & CM_VOID || term_ty & CM_VOID){
-            throw "void type only allowed for function results";
+        if(addi_ty & CM_VOID || term_ty & CM_VOID || addi_ty & CM_ARRAY || term_ty & CM_ARRAY){
+            throw "void/array type is not caculatable";
         }
         // expression 常数优化，暂时不考虑i1为常量的情况
         if(term_ty & CM_CONST && addi_ty & CM_CONST){
@@ -736,8 +765,8 @@ void CminusfBuilder::visit(ASTTerm &node) {
         int term_ty = type_stack.top();
         bottom_up_stack.pop();
         type_stack.pop();
-        if(factor_ty & CM_VOID || term_ty & CM_VOID){
-            throw "void type only allowed for function results";
+        if(factor_ty & CM_VOID || term_ty & CM_VOID || factor_ty & CM_ARRAY || term_ty & CM_ARRAY){
+            throw "void/array type is not caculatable";
         }
         // expression 常数优化，暂时不考虑i1为常量的情况
         if(term_ty & CM_CONST && factor_ty & CM_CONST){
