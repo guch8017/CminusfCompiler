@@ -1,0 +1,60 @@
+/*
+快排，测试递归调用
+*/
+
+int partition(int arr[], int start, int end){
+    int x;
+    int index;
+    int i;
+    int temp;
+    x = arr[end];
+    index = start - 1;
+    i = start;
+    while(i < end){
+        if(arr[i] < x){
+            index = index + 1;
+            temp = arr[index];
+            arr[index] = arr[i];
+            arr[i] = temp;
+        }
+        i = i + 1;
+    }
+    temp = arr[end];
+    arr[end] = arr[index + 1];
+    arr[index + 1] = temp;
+    return index + 1;
+}
+
+void qsort(int arr[], int start, int end){
+    if(start < end){
+        int mid;
+        mid = partition(arr, start, end);
+        qsort(arr, start, mid - 1);
+        qsort(arr, mid + 1, end);
+    }
+}
+
+
+void quicksort(int arr[], int size){
+    qsort(arr, 0, size - 1);
+}
+
+void main(void){
+    int a[10];
+    int i;
+    int b;
+    a[0] = 1;
+    a[1] = 5;
+    a[2] = 4;
+    a[3] = 7;
+    a[4] = 12;
+    a[5] = 2;
+    a[6] = 8;
+    a[7] = 3;
+    quicksort(a, 8);
+    i = 0;
+    while(i < 8){
+        output(a[i]);
+        i = i + 1;
+    }
+}
