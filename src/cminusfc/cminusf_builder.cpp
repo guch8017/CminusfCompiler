@@ -375,7 +375,7 @@ void CminusfBuilder::visit(ASTVar &node) {
         bottom_up_stack.pop();
         type_stack.pop();
         // INT 类型检查
-        if(!(subscripType & CM_INT)){
+        if(!(subscripType & (CM_INT | CM_BOOL))){
             throw "index of array should be an integer";
         }
         
