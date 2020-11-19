@@ -1,4 +1,5 @@
 #include "cminusf_builder.hpp"
+#include "logging.hpp"
 #include <stack>
 
 
@@ -457,22 +458,40 @@ void CminusfBuilder::visit(ASTVar &node) {
         bottom_up_stack.pop();
         type_stack.pop();
         // INT 类型检查
-        if(!(subscripType & (CM_INT | CM_BOOL))){
+        if(subscripType & (CM_ARRAY | CM_VOID)){
             throw "index of array should be an integer";
         }
         
         if(subscripType & CM_CONST){
             // 小于0判断（编译时）
             // 注：若编译时能判断，即代表数组下标为常数，则跳过运行时判断，减少冗余代码
-            int sub_val = dynamic_cast<ConstantInt*>(subscrip)->get_value();
-            if(sub_val < 0){
-                throw "index of array should be 0 or a positive number";
+            float sub_val;
+            if(subscripType & CM_INT){
+                sub_val = dynamic_cast<ConstantInt*>(subscrip)->get_value();
+            }else{
+                sub_val = dynamic_cast<ConstantFP*>(subscrip)->get_value();
             }
+            if(sub_val < 0){
+                LOG(WARNING) << "Negtive array index detected!";
+            }
+            builder->create_call(scope.find("neg_idx_except"), {});
+            // 该语句块在该语句后的所有代码不可达，直接ret后导入黑洞中
+            if(function->get_return_type()->is_void_type()){
+                builder->create_void_ret();
+            }else if(function->get_return_type()->is_integer_type()){
+                builder->create_ret(ConstantInt::get(0, module.get()));
+            }else{
+                builder->create_ret(ConstantFP::get(0, module.get()));
+            }
+            builder->set_insert_point(__bb);
             // bottom_up_stack.push(builder->create_gep(var, {ConstantInt::get(0, module.get()), subscrip}));
         }else{
             // 小于0判断（运行时）
             BasicBlock *err_cond = BasicBlock::create(module.get(), GetNewBlockName(), function);
             BasicBlock *normal_cond = BasicBlock::create(module.get(), GetNewBlockName(), function);
+            if(subscripType & CM_FLOAT){
+                subscrip = builder->create_fptosi(subscrip, Type::get_int32_type(module.get()));
+            }
             CmpInst *cond = builder->create_icmp_lt(subscrip, ConstantInt::get(0, module.get()));
             builder->create_cond_br(cond, err_cond, normal_cond);
             builder->set_insert_point(err_cond);
