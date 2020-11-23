@@ -35,8 +35,17 @@ void main(void){
 }
 ```
 将会生成如下的ll代码
-```
-// TODO：paste  generated .ll here
+```llvm
+define void @main() {
+label.1:
+  %0 = alloca i32
+  ; 判断与跳转被裁减
+  store i32 2, i32* %0
+  ; a=1不可达代码块被裁减
+  %1 = load i32, i32* %0
+  call void @output(i32 %1)
+  ret void
+}
 ```
 - 不可达代码的判别
 `return`,`neg_idx_except()`等语句后的代码均为不可达代码，程序将不会将这些代码编译输出到生成的ll文件中。
