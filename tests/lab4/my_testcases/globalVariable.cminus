@@ -3,10 +3,38 @@
 int globalVariable;
 int globalArray[10];
 
+
+void test(void){
+    /* 测试局部变量对全局变量的覆盖 */
+    int globalVariable;
+    globalVariable = 2;
+    output(globalVariable); /* 2 */
+    {
+        int globalVariable;
+        globalVariable = 3;
+        output(globalVariable); /* 3 */
+    }
+    output(globalVariable); /* 2 */
+}
+
+void testa(int arr[], int num){
+    /* 测试全局数组作为参数传递 */
+    arr[0] = 1;
+    num = 5;
+    output(arr[0]); /* 1 */
+    output(num); /* 5 */
+}
+
+
 void main(void){
     /* 测试全局变量赋值与读取 */
     globalVariable = 1;
-    output(globalVariable);
+    output(globalVariable); /* 1 */
     globalArray[0] = 2;
-    output(globalArray[0]);
+    output(globalArray[0]); /* 2 */
+    testa(globalArray, globalVariable);
+    output(globalVariable); /* 1 */
+    output(globalArray[0]); /* 1 */
+    test();
+    output(globalVariable); /* 1 */
 }

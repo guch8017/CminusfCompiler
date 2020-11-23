@@ -232,8 +232,20 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
                 }
             }
         }
-        else if(!scope.push(node.params[i]->id, arg)){
-            throw "redefinition of '" + node.params[i]->id + '\'';
+        else{
+            if(node.params[i]->type == TYPE_INT){
+                AllocaInst* a_var = builder->create_alloca(Type::get_int32_type(module.get()));
+                builder->create_store(arg, a_var);
+                if(!scope.push(node.params[i]->id, a_var)){
+                    throw "redefinition of '" + node.params[i]->id + '\'';
+                }
+            }else if(node.params[i]->type == TYPE_FLOAT){
+                AllocaInst* a_var = builder->create_alloca(Type::get_float_type(module.get()));
+                builder->create_store(arg, a_var);
+                if(!scope.push(node.params[i]->id, a_var)){
+                    throw "redefinition of '" + node.params[i]->id + '\'';
+                }
+            }
         }
         
         t_scope.push(node.params[i]->id, CminusType2CM_TYPE(node.params[i]->type) | ((node.params[i]->isarray) ? CM_ARRAY : CM_EMPTY) | CM_PARAM);
