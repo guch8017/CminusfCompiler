@@ -473,18 +473,17 @@ void CminusfBuilder::visit(ASTVar &node) {
             }
             if(sub_val < 0){
                 LOG(WARNING) << "Negtive array index detected!";
+                builder->create_call(scope.find("neg_idx_except"), {});
+                // 该语句块在该语句后的所有代码不可达，直接ret后导入黑洞中
+                if(function->get_return_type()->is_void_type()){
+                    builder->create_void_ret();
+                }else if(function->get_return_type()->is_integer_type()){
+                    builder->create_ret(ConstantInt::get(0, module.get()));
+                }else{
+                    builder->create_ret(ConstantFP::get(0, module.get()));
+                }
+                builder->set_insert_point(__bb);
             }
-            builder->create_call(scope.find("neg_idx_except"), {});
-            // 该语句块在该语句后的所有代码不可达，直接ret后导入黑洞中
-            if(function->get_return_type()->is_void_type()){
-                builder->create_void_ret();
-            }else if(function->get_return_type()->is_integer_type()){
-                builder->create_ret(ConstantInt::get(0, module.get()));
-            }else{
-                builder->create_ret(ConstantFP::get(0, module.get()));
-            }
-            builder->set_insert_point(__bb);
-            // bottom_up_stack.push(builder->create_gep(var, {ConstantInt::get(0, module.get()), subscrip}));
         }else{
             // 小于0判断（运行时）
             BasicBlock *err_cond = BasicBlock::create(module.get(), GetNewBlockName(), function);

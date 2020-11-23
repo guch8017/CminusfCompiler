@@ -4,6 +4,7 @@ void main(void){
     int i;
     i = 9;
     while(i > 1 - 5){
+        output(i);
         a[i] = 10;
         i = i - 1;
     }
