@@ -1,0 +1,34 @@
+/* 测试自动类型转换 */
+void main(void){
+    int a;
+    float b;
+    
+    /* 测试跨类型赋值 */
+    a = 2.0;
+    output(a); /* 2 */
+    b = 2;
+    outputFloat(b); /* 2 */
+    a = (a == 2);
+    output(a); /* 1 */
+    b = (a == 1);
+    outputFloat(b); /* 1 */
+
+
+    /* 测试跨类型比较 */
+    a = ((a == 1) == 1); output(a); /* bool - int:1 */
+    a = ((a == 1) == (a == 1)); output(a); /* bool - bool:1 */
+    a = ((a == 1) == b); output(a); /* bool - float: 1 */
+    a = (a == b); output(a); /* int - float: 1 */
+
+
+    /* 测试表达式运算类型转换 */
+    a = 4 * (2.0 / 4); /* 应先转为float除法，结果应为2 */
+    output(a);
+    a = 4 * (2 / 4); /* 整型除法2/4=0，结果应为0 */
+    output(a);
+    b = 5 * (2.0 / 4); /* 2.5 */
+    outputFloat(b);
+    b = 5.0 * (2 / 4); /* 0 */
+    outputFloat(b);
+
+}

@@ -1,0 +1,10 @@
+/* 测试动态数组下标检查 */
+void main(void){
+    int a[10];
+    int i;
+    i = 9;
+    while(i > 1 - 5){
+        a[i] = 10;
+        i = i - 1;
+    }
+}

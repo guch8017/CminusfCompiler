@@ -623,7 +623,12 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
             return;
         }
         
-        if(l_type & CM_INT && r_type & CM_INT){
+        if(l_type & (CM_INT | CM_BOOL) && r_type & (CM_INT | CM_BOOL)){
+            /*
+            if(l_type & CM_BOOL){
+                l_val = builder->create_zext(l_val, Type::get_int32_type(module.get()));
+            }
+            */
             switch (node.op)
             {
             case OP_LE:
@@ -648,10 +653,16 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
                 throw "Unknown relop type";
             }
         }else{
-            if(l_type & CM_INT){
+            if(l_type & (CM_INT | CM_BOOL)){
+                if(l_type & CM_BOOL){
+                    l_val = builder->create_zext(l_val, Type::get_int32_type(module.get()));
+                }
                 l_val = builder->create_sitofp(l_val, Type::get_float_type(module.get()));
             }
-            if(r_type & CM_INT){
+            if(r_type & (CM_INT | CM_BOOL)){
+                if(r_type & CM_BOOL){
+                    r_val = builder->create_zext(r_val, Type::get_int32_type(module.get()));
+                }
                 r_val = builder->create_sitofp(r_val, Type::get_float_type(module.get()));
             }
             switch (node.op)
