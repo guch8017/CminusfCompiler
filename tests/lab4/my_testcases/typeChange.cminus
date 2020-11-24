@@ -1,4 +1,29 @@
 /* 测试自动类型转换 */
+
+int intret(int a){
+    return a;
+}
+
+float floatret(float b){
+    return b;
+}
+
+int intreta(float a){
+    return a;
+}
+
+float floatreta(int b){
+    return b;
+}
+
+float testBoolCast(int a){
+    return a == 1;
+}
+
+int testBoolCastA(float b){
+    return b == 1;
+}
+
 void main(void){
     int a;
     float b;
@@ -35,4 +60,10 @@ void main(void){
     a = (a == 3) * 2;
     output(a);
 
+    a = floatret(a);
+    a = floatreta(b);
+    b = intret(b);
+    b = intreta(a);
+    a = testBoolCast(a == 1);
+    b = testBoolCastA(a == 1);
 }

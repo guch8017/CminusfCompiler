@@ -428,7 +428,7 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
         if(function->get_return_type()->is_integer_type() && (expr_type & CM_FLOAT)){
             expr_val = builder->create_fptosi(expr_val, Type::get_int32_type(module.get()));
         }else if(function->get_return_type()->is_float_type() && (expr_type & CM_INT)){
-            expr_val = builder->create_sitofp(expr_val, Type::get_int32_type(module.get()));
+            expr_val = builder->create_sitofp(expr_val, Type::get_float_type(module.get()));
         }
         builder->create_ret(expr_val);
         bottom_up_stack.pop();
