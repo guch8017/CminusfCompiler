@@ -425,6 +425,10 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
         if(expr_type & CM_ARRAY || expr_type & CM_VOID){
             throw "function should not return void/array type";
         }
+        if (expr_type & CM_BOOL){
+            expr_val = builder->create_zext(expr_val, Type::get_int32_type(module.get()));
+            expr_type = (expr_type & (~CM_BOOL)) | CM_INT;
+        }
         if(function->get_return_type()->is_integer_type() && (expr_type & CM_FLOAT)){
             expr_val = builder->create_fptosi(expr_val, Type::get_int32_type(module.get()));
         }else if(function->get_return_type()->is_float_type() && (expr_type & CM_INT)){
