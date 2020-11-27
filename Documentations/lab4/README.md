@@ -67,7 +67,7 @@ make -j
 make install
 ```
 
-编译后会产生 `cminusfc` 程序，它能将cminus文件输出为LLVM IR，也可以利用clang将IR编译成二进制。程序逻辑写在`src/cminusfc/main.cpp`中。
+编译后会产生 `cminusfc` 程序，它能将cminus文件输出为LLVM IR，也可以利用clang将IR编译成二进制。程序逻辑写在`src/cminusfc/cminusfc.cpp`中。
 
 当需要对 `.cminus` 文件测试时，可以这样使用：
 
