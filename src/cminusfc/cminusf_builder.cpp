@@ -727,7 +727,7 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
         if(addi_ty & CM_VOID || term_ty & CM_VOID || addi_ty & CM_ARRAY || term_ty & CM_ARRAY){
             throw "void/array type is not caculatable";
         }
-        // expression 常数优化，暂时不考虑i1为常量的情况
+        // expression 常数优化，若为比较常量则会自动存储为ConstantInt类型，不考虑i1情况
         if(term_ty & CM_CONST && addi_ty & CM_CONST){
             if(term_ty & CM_INT && addi_ty & CM_INT){
                 int t_val = dynamic_cast<ConstantInt*>(term_val)->get_value();
@@ -813,7 +813,7 @@ void CminusfBuilder::visit(ASTTerm &node) {
         if(factor_ty & CM_VOID || term_ty & CM_VOID || factor_ty & CM_ARRAY || term_ty & CM_ARRAY){
             throw "void/array type is not caculatable";
         }
-        // expression 常数优化，暂时不考虑i1为常量的情况
+        // expression 常数优化，若为比较常量则会自动存储为ConstantInt类型，不考虑i1情况
         if(term_ty & CM_CONST && factor_ty & CM_CONST){
             if(term_ty & CM_INT && factor_ty & CM_INT){
                 int f_val = dynamic_cast<ConstantInt*>(factor_val)->get_value();
@@ -823,11 +823,14 @@ void CminusfBuilder::visit(ASTTerm &node) {
                     bottom_up_stack.push(ConstantInt::get(t_val * f_val, module.get()));
                 }else{
                     if(f_val == 0){
-                        throw "division by zero error (compile time)";
+                        LOG_WARNING << "division by zero error (compile time)";
+                        bottom_up_stack.push(builder->create_isdiv(term_val, factor_val));
+                        type_stack.push(CM_INT);
+                    }else{
+                        bottom_up_stack.push(ConstantInt::get(t_val / f_val, module.get()));
+                        type_stack.push(CM_INT | CM_CONST);
                     }
-                    bottom_up_stack.push(ConstantInt::get(t_val / f_val, module.get()));
                 }
-                type_stack.push(CM_INT | CM_CONST);
             }else{
                 float t_val, f_val;
                 if(term_ty & CM_INT){
@@ -844,11 +847,15 @@ void CminusfBuilder::visit(ASTTerm &node) {
                     bottom_up_stack.push(ConstantFP::get(t_val * f_val, module.get()));
                 }else{
                     if(f_val == 0){
-                        throw "division by zero error (compile time)";
+                        LOG_WARNING << "division by zero error (compile time)";
+                        bottom_up_stack.push(builder->create_fdiv(ConstantFP::get(t_val, module.get()), ConstantFP::get(f_val, module.get())));
+                        type_stack.push(CM_FLOAT);
+                    }else{
+                        bottom_up_stack.push(ConstantFP::get(t_val / f_val, module.get()));
+                        type_stack.push(CM_FLOAT | CM_CONST);
                     }
-                    bottom_up_stack.push(ConstantFP::get(t_val / f_val, module.get()));
                 }
-                type_stack.push(CM_FLOAT | CM_CONST);
+                
             }
             return;
         }
