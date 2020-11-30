@@ -1,24 +1,22 @@
 #include "Module.h"
 
-Module::Module(std::string name) 
+Module::Module(std::string name)
     : module_name_(name)
 {
-    void_ty_ = new Type(Type::VoidTyID);
-    label_ty_ = new Type(Type::LabelTyID);
-    int1_ty_ = new IntegerType(1);
-    int32_ty_ = new IntegerType(32);
-    int32ptr_ty_ = new PointerType(int32_ty_);
-    float32_ty_ = new FloatType();
-    float32ptr_ty_ = new PointerType(float32_ty_);
+    void_ty_ = new Type(Type::VoidTyID, this);
+    label_ty_ = new Type(Type::LabelTyID, this);
+    int1_ty_ = new IntegerType(1, this);
+    int32_ty_ = new IntegerType(32, this);
+    float32_ty_ = new FloatType(this);
     // init instr_id2string
-    instr_id2string_.insert({ Instruction::Ret, "ret" }); 
-    instr_id2string_.insert({ Instruction::Br, "br" }); 
-    
+    instr_id2string_.insert({ Instruction::Ret, "ret" });
+    instr_id2string_.insert({ Instruction::Br, "br" });
+
     instr_id2string_.insert({ Instruction::Add, "add" });
     instr_id2string_.insert({ Instruction::Sub, "sub" });
     instr_id2string_.insert({ Instruction::Mul, "mul" });
     instr_id2string_.insert({ Instruction::Div, "sdiv" });
-    
+
     instr_id2string_.insert({ Instruction::FAdd, "fadd" });
     instr_id2string_.insert({ Instruction::FSub, "fsub" });
     instr_id2string_.insert({ Instruction::FMul, "fmul" });
@@ -43,9 +41,7 @@ Module::~Module()
     delete label_ty_;
     delete int1_ty_;
     delete int32_ty_;
-    delete int32ptr_ty_;
     delete float32_ty_;
-    delete float32ptr_ty_;
 }
 
 Type *Module::get_void_type()
@@ -68,9 +64,27 @@ IntegerType *Module::get_int32_type()
     return int32_ty_;
 }
 
+PointerType *Module::get_pointer_type(Type *contained)
+{
+    if( pointer_map_.find(contained) == pointer_map_.end() )
+    {
+        pointer_map_[contained] = new PointerType(contained);
+    }
+    return pointer_map_[contained];
+}
+
+ArrayType *Module::get_array_type(Type *contained, unsigned num_elements)
+{
+    if( array_map_.find({contained, num_elements}) == array_map_.end() )
+    {
+        array_map_[{contained, num_elements}] = new ArrayType(contained, num_elements);
+    }
+    return array_map_[{contained, num_elements}];
+}
+
 PointerType *Module::get_int32_ptr_type()
 {
-    return int32ptr_ty_;
+    return get_pointer_type(int32_ty_);
 }
 
 FloatType *Module::get_float_type()
@@ -80,7 +94,7 @@ FloatType *Module::get_float_type()
 
 PointerType *Module::get_float_ptr_type()
 {
-    return float32ptr_ty_;
+    return get_pointer_type(float32_ty_);
 }
 
 void Module::add_function(Function *f)
@@ -95,7 +109,7 @@ void Module::add_global_variable(GlobalVariable* g)
 
 void Module::set_print_name()
 {
-    
+
 }
 
 std::string Module::print()
