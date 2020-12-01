@@ -3,6 +3,13 @@
 #include <stack>
 
 
+// use these macros to get constant value
+#define CONST_FP(num) \
+    ConstantFP::get((float)num, module.get())
+#define CONST_ZERO(type) \
+    ConstantZero::get(var_type, module.get())
+
+
 // You can define global variables here
 // to store state
 

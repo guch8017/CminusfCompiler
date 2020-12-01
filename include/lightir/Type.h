@@ -24,17 +24,17 @@ public:
         FloatTyID         // float
     };
 
-    explicit Type(TypeID tid);
+    explicit Type(TypeID tid, Module *m);
     ~Type() = default;
 
     TypeID get_type_id() const { return tid_; }
 
     bool is_void_type() const { return get_type_id() == VoidTyID; }
-    
+
     bool is_label_type() const { return get_type_id() == LabelTyID; }
 
     bool is_integer_type() const { return get_type_id() == IntegerTyID; }
-        
+
     bool is_function_type() const { return get_type_id() == FunctionTyID; }
 
     bool is_array_type() const { return get_type_id() == ArrayTyID; }
@@ -59,19 +59,26 @@ public:
 
     static PointerType *get_float_ptr_type(Module *m);
 
+    static PointerType *get_pointer_type(Type *contained);
+
+    static ArrayType *get_array_type(Type *contained, unsigned num_elements);
+
     Type *get_pointer_element_type();
-    
+
+    Module *get_module();
+
     std::string print();
 
 private:
     TypeID tid_;
+    Module *m_;
 };
 
 class IntegerType : public Type {
 public:
-    explicit IntegerType(unsigned num_bits );
+    explicit IntegerType(unsigned num_bits ,Module *m);
 
-    static IntegerType *get(unsigned num_bits );
+    static IntegerType *get(unsigned num_bits, Module *m );
 
     unsigned get_num_bits();
 private:
@@ -128,8 +135,8 @@ private:
 
 class FloatType : public Type {
 public:
-    FloatType ();
-    static IntegerType *get();
+    FloatType (Module *m);
+    static FloatType *get(Module *m);
 private:
 };
 
