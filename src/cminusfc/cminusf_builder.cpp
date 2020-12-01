@@ -217,37 +217,24 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
         if(node.params[i]->type == TYPE_VOID){
             throw "void type only allowed for function results";
         }
+        AllocaInst* val = nullptr;
         if(node.params[i]->isarray){
             if(node.params[i]->type == TYPE_INT){
-                AllocaInst* a_var = builder->create_alloca(Type::get_int32_ptr_type(module.get()));
-                builder->create_store(arg, a_var);
-                if(!scope.push(node.params[i]->id, a_var)){
-                    throw "redefinition of '" + node.params[i]->id + '\'';
-                }
+                val = builder->create_alloca(Type::get_int32_ptr_type(module.get()));
             }else if(node.params[i]->type == TYPE_FLOAT){
-                AllocaInst* a_var = builder->create_alloca(Type::get_float_ptr_type(module.get()));
-                builder->create_store(arg, a_var);
-                if(!scope.push(node.params[i]->id, a_var)){
-                    throw "redefinition of '" + node.params[i]->id + '\'';
-                }
+                val = builder->create_alloca(Type::get_float_ptr_type(module.get()));
             }
         }
         else{
             if(node.params[i]->type == TYPE_INT){
-                AllocaInst* a_var = builder->create_alloca(Type::get_int32_type(module.get()));
-                builder->create_store(arg, a_var);
-                if(!scope.push(node.params[i]->id, a_var)){
-                    throw "redefinition of '" + node.params[i]->id + '\'';
-                }
+                val = builder->create_alloca(Type::get_int32_type(module.get()));
             }else if(node.params[i]->type == TYPE_FLOAT){
-                AllocaInst* a_var = builder->create_alloca(Type::get_float_type(module.get()));
-                builder->create_store(arg, a_var);
-                if(!scope.push(node.params[i]->id, a_var)){
-                    throw "redefinition of '" + node.params[i]->id + '\'';
-                }
+                val = builder->create_alloca(Type::get_float_type(module.get()));
             }
         }
-        
+        builder->create_store(arg, val);
+        if(!scope.push(node.params[i]->id, val))
+            throw "redefinition of '" + node.params[i]->id + '\'';
         t_scope.push(node.params[i]->id, CminusType2CM_TYPE(node.params[i]->type) | ((node.params[i]->isarray) ? CM_ARRAY : CM_EMPTY) | CM_PARAM);
         ++i;
     }
@@ -454,18 +441,9 @@ void CminusfBuilder::visit(ASTVar &node) {
         throw "non-object type is not assignable";
     }
     int var_t = t_scope.find(node.id);
-    // Type* var_type = var->get_type();
-    // printf("%s: %d\n", node.id.c_str(), var_type->get_type_id());
-    // 1: 全部为指针类型，对是否指向数组需要额外判断，实验没要求先PASS
-    // 2: 加了个TypeScope可以判断了～
     if(!(var_t & CM_ARRAY) && node.expression != nullptr){
         throw "subscripted value is not an array";
     }
-    /*
-    if((var_t & CM_ARRAY) && node.expression == nullptr){
-        throw "array type is not assignable";
-    }
-    */
     if(node.expression){
         node.expression->accept(*this);
         LoadFromPointerIfNeeded(builder);
@@ -474,10 +452,10 @@ void CminusfBuilder::visit(ASTVar &node) {
         bottom_up_stack.pop();
         type_stack.pop();
         // INT 类型检查
+        // 修正: 改为自动类型转换，转换不了的才报错
         if(subscripType & (CM_ARRAY | CM_VOID)){
             throw "index of array should be an integer";
         }
-        
         if(subscripType & CM_CONST){
             // 小于0判断（编译时）
             // 注：若编译时能判断，即代表数组下标为常数，则跳过运行时判断，减少冗余代码
