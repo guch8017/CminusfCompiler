@@ -507,6 +507,8 @@
       // 返回指针指向的类型
       static PointerType *get(Type *contained);
       // 创建指向contained类型的指针类型
+      Type *get_pointer_element_type()
+      // 对于pointertype而言返回指针指向的类型，其他则返回nullptr
       ```
   
 - API:

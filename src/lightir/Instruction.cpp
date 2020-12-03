@@ -356,7 +356,7 @@ Type *GetElementPtrInst::get_element_type(Value *ptr, std::vector<Value *> idxs)
 {
 
     Type *ty = ptr->get_type()->get_pointer_element_type();
-    assert(ty->is_array_type()||ty->is_integer_type()||ty->is_float_type());
+    assert( "GetElementPtrInst ptr is wrong type" && (ty->is_array_type()||ty->is_integer_type()||ty->is_float_type()) );
     if (ty->is_array_type())
     {
         ArrayType *arr_ty = static_cast<ArrayType *>(ty);
