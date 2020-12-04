@@ -9,10 +9,6 @@
 #define CONST_ZERO(type) \
     ConstantZero::get(var_type, module.get())
 
-
-// You can define global variables here
-// to store state
-
 /// 更详细的类型分类
 /// 修改注释：添加Const标志，用于固定值的预计算。
 /// 涉及到的功能：优化输出结构（固定的结果编译时进行计算）、编译时下标越界检查、
@@ -28,39 +24,6 @@ typedef enum CM_TYPE{
     CM_PARAM = 0x80
 } CM_TYPE;
 
-class TypeScope {
-    /**
-     * 重写的Scope，用于进行类型计算
-     **/
-public:
-    TypeScope(){
-        enter();
-        push("input", CM_INT);
-        push("output", CM_VOID);
-        push("outputFloat", CM_VOID);
-        push("neg_idx_except", CM_VOID);
-    }
-    void enter() {inner.push_back({});}
-    void exit() {inner.pop_back();}
-    bool push(std::string name, int val) {
-        auto result = inner[inner.size() - 1].insert({name, val});
-        return result.second;
-    }
-    int find(std::string name) {
-        for (auto s = inner.rbegin(); s!= inner.rend();s++) {
-            auto iter = s->find(name);
-            if (iter != s->end()) {
-                return iter->second;
-            }
-        }
-        return CM_ERR;
-    }
-private:
-    std::vector<std::map<std::string, int>> inner;
-};
-
-
-
 int block_counter = 0;
 /// 函数参数类型
 /// Type不从Value派生，故无法使用bottom_up_stack向上传递，改用一个vector来传递函数变量类型
@@ -74,10 +37,6 @@ Function* function = nullptr;
 std::stack<Value*> bottom_up_stack;  // 值传递栈
 std::stack<int> type_stack;   // 类型栈
 
-/// 根据变量名获取变量的类型
-TypeScope t_scope;
-
-
 /// 黑洞，用于吸收ret后的所有不可达指令，当builder指向此处时，所插入的代码将不会体现在输出的.ll上
 /// 当程序遇到ret语句时，在执行完builder->create_(void_)ret后，builder的插入点将会被设置到__bb黑洞处
 /// 此操作可以减少部分冗余代码，也可防止不可达代码带来的lli编译问题
@@ -85,14 +44,6 @@ Module* blackholeModule = new Module("MOD");
 FunctionType* __funcType = FunctionType::get(Type::get_void_type(blackholeModule), {});
 Function* __blackholeFunc = Function::create(__funcType, "NONE", blackholeModule);
 BasicBlock* __bb = BasicBlock::create(blackholeModule, "bb", __blackholeFunc);
-
-/*
- * use CMinusfBuilder::Scope to construct scopes
- * scope.enter: enter a new scope
- * scope.exit: exit current scope
- * scope.push: add a new binding to current scope
- * scope.find: find and return the value bound to the name
- */
 
 Type* GetDeclType(CminusType _type, Module* module){
     /**
@@ -118,6 +69,34 @@ inline std::string GetNewBlockName(){
      * 获取一个新的BasicBlock名 
      **/
     return std::to_string(++block_counter);
+}
+
+int Val2CM_TYPE(Type* t){
+    int ret = CM_EMPTY;
+    Type* pt;
+    if(t->is_function_type()){
+        pt = ((FunctionType*)t)->get_return_type();
+    }else{
+        // 注：由于编译器实现，调用此函数传入的参数一定为AllocaInst所返回的指针类型，直接转型
+        pt = t->get_pointer_element_type();
+    }
+    if(pt->is_pointer_type()){
+        // ArrayType，仅出现在数组参数传递过程中
+        ret |= CM_PARAM | CM_ARRAY;
+        pt = pt->get_pointer_element_type();
+    }
+    if(pt->is_array_type()){
+        ret |= CM_ARRAY;
+        pt = ((ArrayType*)pt)->get_element_type();
+    }
+    if(pt->is_integer_type()){
+        ret |= CM_INT;
+    }else if(pt->is_float_type()){
+        ret |= CM_FLOAT;
+    }else if(pt->is_void_type()){
+        ret |= CM_VOID;
+    }
+    return ret;
 }
 
 int CminusType2CM_TYPE(CminusType cm){
@@ -203,7 +182,6 @@ void CminusfBuilder::visit(ASTVarDeclaration &node) {
     if(!scope.push(node.id, var)){
         throw "Redefinition of '" + node.id + '\'';
     }
-    t_scope.push(node.id, CminusType2CM_TYPE(node.type) | ((node.num != nullptr) ? CM_ARRAY : CM_EMPTY));
 }
 
 void CminusfBuilder::visit(ASTFunDeclaration &node) {
@@ -215,9 +193,8 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
     FunctionType* f_type = FunctionType::get(ret_type, param_list);
     Function* func = Function::create(f_type, node.id, module.get());
     scope.push(node.id, func);
-    t_scope.push(node.id, CminusType2CM_TYPE(node.type));
     function = func;
-    scope.enter();t_scope.enter();
+    scope.enter();
     int i = 0;
     builder->set_insert_point(BasicBlock::create(module.get(), GetNewBlockName(), function));
     for(auto arg: function->get_args()){
@@ -242,7 +219,6 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
         builder->create_store(arg, val);
         if(!scope.push(node.params[i]->id, val))
             throw "redefinition of '" + node.params[i]->id + '\'';
-        t_scope.push(node.params[i]->id, CminusType2CM_TYPE(node.params[i]->type) | ((node.params[i]->isarray) ? CM_ARRAY : CM_EMPTY) | CM_PARAM);
         ++i;
     }
     node.compound_stmt->accept(*this);
@@ -260,7 +236,7 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
     default:
         break;
     }
-    scope.exit();t_scope.exit();
+    scope.exit();
 }
 
 void CminusfBuilder::visit(ASTParam &node) { 
@@ -280,14 +256,14 @@ void CminusfBuilder::visit(ASTParam &node) {
 }
 
 void CminusfBuilder::visit(ASTCompoundStmt &node) {
-    scope.enter();t_scope.enter();
+    scope.enter();
     for(auto var_decl: node.local_declarations){
         var_decl->accept(*this);
     }
     for(auto statement: node.statement_list){
         statement->accept(*this);
     }
-    scope.exit();t_scope.exit();
+    scope.exit();
 }
 
 void CminusfBuilder::visit(ASTExpressionStmt &node) { 
@@ -447,7 +423,7 @@ void CminusfBuilder::visit(ASTVar &node) {
     if(dynamic_cast<Function*>(var)){
         throw "non-object type is not assignable";
     }
-    int var_t = t_scope.find(node.id);
+    int var_t = Val2CM_TYPE(var->get_type());
     if(!(var_t & CM_ARRAY) && node.expression != nullptr){
         throw "subscripted value is not an array";
     }
@@ -624,11 +600,12 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
         }
         
         if(l_type & (CM_INT | CM_BOOL) && r_type & (CM_INT | CM_BOOL)){
-            /*
             if(l_type & CM_BOOL){
                 l_val = builder->create_zext(l_val, Type::get_int32_type(module.get()));
             }
-            */
+            if(r_type & CM_BOOL){
+                r_val = builder->create_zext(r_val, Type::get_int32_type(module.get()));
+            }
             switch (node.op)
             {
             case OP_LE:
@@ -806,6 +783,7 @@ void CminusfBuilder::visit(ASTTerm &node) {
                 
                 if(node.op == OP_MUL){
                     bottom_up_stack.push(ConstantInt::get(t_val * f_val, module.get()));
+                    type_stack.push(CM_INT | CM_CONST);
                 }else{
                     if(f_val == 0){
                         LOG_WARNING << "division by zero error (compile time)";
@@ -830,6 +808,7 @@ void CminusfBuilder::visit(ASTTerm &node) {
                 }
                 if(node.op == OP_MUL){
                     bottom_up_stack.push(ConstantFP::get(t_val * f_val, module.get()));
+                    type_stack.push(CM_FLOAT | CM_CONST);
                 }else{
                     if(f_val == 0){
                         LOG_WARNING << "division by zero error (compile time)";
@@ -889,7 +868,7 @@ void CminusfBuilder::visit(ASTCall &node) {
     if(c_func == nullptr){
         throw "called object type is not a function";
     }
-    int ret_t = t_scope.find(node.id);
+    int ret_t = Val2CM_TYPE(func->get_type());
     std::vector<Value*> params;
     if(node.args.size() != c_func->get_args().size()){
         throw "function missing required positional argument";
@@ -932,5 +911,4 @@ void CminusfBuilder::visit(ASTCall &node) {
     CallInst* ret_val = builder->create_call(c_func, params);
     bottom_up_stack.push(ret_val);
     type_stack.push(ret_t);
-    
 }
