@@ -3,14 +3,20 @@
 
 #include <cassert>
 
-Type::Type(TypeID tid)
+Type::Type(TypeID tid, Module *m)
 {
     tid_ = tid;
+    m_ = m;
+}
+
+Module *Type::get_module()
+{
+    return m_;
 }
 
 bool Type::is_eq_type(Type *ty1, Type *ty2)
 {
-    return ty1->get_type_id() == ty2->get_type_id();
+    return ty1 == ty2;
 }
 
 Type *Type::get_void_type(Module *m)
@@ -33,22 +39,32 @@ IntegerType *Type::get_int32_type(Module *m)
     return m->get_int32_type();
 }
 
+PointerType *Type::get_pointer_type(Type *contained)
+{
+    return PointerType::get(contained);
+}
+
+ArrayType *Type::get_array_type(Type *contained, unsigned num_elements)
+{
+    return ArrayType::get(contained, num_elements);
+}
+
 PointerType *Type::get_int32_ptr_type(Module *m)
 {
     return m->get_int32_ptr_type();
 }
 
-FloatType *Type::get_float_type(Module *m) 
+FloatType *Type::get_float_type(Module *m)
 {
     return m->get_float_type();
 }
 
-PointerType *Type::get_float_ptr_type(Module *m) 
+PointerType *Type::get_float_ptr_type(Module *m)
 {
     return m->get_float_ptr_type();
 }
 
-Type *Type::get_pointer_element_type(){ 
+Type *Type::get_pointer_element_type(){
     if( this->is_pointer_type() )
         return static_cast<PointerType *>(this)->get_element_type();
     else
@@ -100,14 +116,14 @@ std::string Type::print(){
     return type_ir;
 }
 
-IntegerType::IntegerType(unsigned num_bits )
-    : Type(Type::IntegerTyID), num_bits_(num_bits)
+IntegerType::IntegerType(unsigned num_bits , Module *m)
+    : Type(Type::IntegerTyID, m), num_bits_(num_bits)
 {
 }
 
-IntegerType *IntegerType::get(unsigned num_bits )
+IntegerType *IntegerType::get(unsigned num_bits, Module *m )
 {
-    return new IntegerType(num_bits);
+    return new IntegerType(num_bits, m);
 }
 
 unsigned IntegerType::get_num_bits()
@@ -116,7 +132,7 @@ unsigned IntegerType::get_num_bits()
 }
 
 FunctionType::FunctionType(Type *result, std::vector<Type *> params)
-    : Type(Type::FunctionTyID)
+    : Type(Type::FunctionTyID, nullptr)
 {
     assert(is_valid_return_type(result) && "Invalid return type for function!");
     result_ = result;
@@ -160,7 +176,7 @@ Type *FunctionType::get_return_type() const
 }
 
 ArrayType::ArrayType(Type *contained, unsigned num_elements)
-    : Type(Type::ArrayTyID), num_elements_(num_elements)
+    : Type(Type::ArrayTyID, contained->get_module()), num_elements_(num_elements)
 {
     assert(is_valid_element_type(contained) && "Not a valid type for array element!");
     contained_ = contained;
@@ -173,22 +189,22 @@ bool ArrayType::is_valid_element_type(Type *ty)
 
 ArrayType *ArrayType::get(Type *contained, unsigned num_elements)
 {
-    return new ArrayType(contained, num_elements);
+    return contained->get_module()->get_array_type(contained, num_elements);
 }
 
 PointerType::PointerType(Type *contained)
-    : Type(Type::PointerTyID), contained_(contained)
+    : Type(Type::PointerTyID, contained->get_module()), contained_(contained)
 {
-    
+
 }
 
 PointerType *PointerType::get(Type *contained)
 {
-    return new PointerType(contained);
+    return contained->get_module()->get_pointer_type(contained);
 }
 
-FloatType::FloatType () 
-    : Type(Type::FloatTyID) 
+FloatType::FloatType (Module *m)
+    : Type(Type::FloatTyID, m)
 {
 
 }
