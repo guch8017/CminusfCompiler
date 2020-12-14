@@ -12,6 +12,7 @@ private:
 public:
     IRBuilder(BasicBlock *bb, Module *m) : BB_(bb), m_(m) {};
     ~IRBuilder() = default;
+    Module *get_module(){return m_;}
     BasicBlock *get_insert_block() { return this->BB_; }
     void set_insert_point(BasicBlock *bb) { this->BB_ = bb; } //在某个基本块中插入指令
     BinaryInst *create_iadd( Value *lhs, Value *rhs){ return BinaryInst::create_add( lhs, rhs, this->BB_, m_);}   //创建加法指令（以及其他算术指令）

@@ -18,8 +18,13 @@ public:
 
     // start from 0
     void set_operand(unsigned i, Value *v);
+    void add_operand( Value *v);
 
     unsigned get_num_operand() const;
+
+    void remove_use_of_ops();
+    void remove_operands(int index1,int index2);
+
 private:
     // std::unique_ptr< std::list<Value *> > operands_;   // operands of this value
     std::vector<Value *> operands_;   // operands of this value

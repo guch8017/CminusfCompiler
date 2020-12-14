@@ -54,21 +54,59 @@ PointerType *Type::get_int32_ptr_type(Module *m)
     return m->get_int32_ptr_type();
 }
 
-FloatType *Type::get_float_type(Module *m)
+FloatType *Type::get_float_type(Module *m) 
 {
     return m->get_float_type();
 }
 
-PointerType *Type::get_float_ptr_type(Module *m)
+PointerType *Type::get_float_ptr_type(Module *m) 
 {
     return m->get_float_ptr_type();
 }
 
-Type *Type::get_pointer_element_type(){
+Type *Type::get_pointer_element_type(){ 
     if( this->is_pointer_type() )
         return static_cast<PointerType *>(this)->get_element_type();
     else
         return nullptr;
+}
+
+Type *Type::get_array_element_type(){
+    if( this->is_array_type() )
+        return static_cast<ArrayType *>(this)->get_element_type();
+    else
+        return nullptr;
+}
+
+int Type::get_size() 
+{
+    if (this->is_integer_type()) 
+    {
+        auto bits = static_cast<IntegerType *>(this)->get_num_bits() / 8;
+        return bits > 0 ? bits : 1;        
+    }
+    if (this->is_array_type()) 
+    {
+        auto element_size = static_cast<ArrayType *>(this)->get_element_type()->get_size();
+        auto num_elements = static_cast<ArrayType *>(this)->get_num_of_elements();
+        return element_size * num_elements;
+    }
+    if (this->is_pointer_type()) 
+    {
+        if (this->get_pointer_element_type()->is_array_type()) 
+        {
+            return this->get_pointer_element_type()->get_size();
+        } 
+        else 
+        {
+            return 4;
+        }
+    }
+    if(this->is_float_type())
+    {
+        return 4;
+    }
+    return 0;
 }
 
 std::string Type::print(){
@@ -195,7 +233,7 @@ ArrayType *ArrayType::get(Type *contained, unsigned num_elements)
 PointerType::PointerType(Type *contained)
     : Type(Type::PointerTyID, contained->get_module()), contained_(contained)
 {
-
+    
 }
 
 PointerType *PointerType::get(Type *contained)
@@ -203,8 +241,8 @@ PointerType *PointerType::get(Type *contained)
     return contained->get_module()->get_pointer_type(contained);
 }
 
-FloatType::FloatType (Module *m)
-    : Type(Type::FloatTyID, m)
+FloatType::FloatType (Module *m) 
+    : Type(Type::FloatTyID, m) 
 {
 
 }

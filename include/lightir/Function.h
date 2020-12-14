@@ -32,13 +32,16 @@ public:
     void add_basic_block(BasicBlock *bb);
 
     unsigned get_num_of_args() const;
+    unsigned get_num_basic_blocks() const;
     
     Module *get_parent() const;
 
     std::list<Argument *>::iterator arg_begin() { return arguments_.begin(); }
     std::list<Argument *>::iterator arg_end() { return arguments_.end(); }
     
-    void remove(BasicBlock* bb) { basic_blocks_.remove(bb); }
+    void remove(BasicBlock* bb);
+    BasicBlock *get_entry_block() { return *basic_blocks_.begin(); }
+
     std::list<BasicBlock *> get_basic_blocks() { return basic_blocks_; }
     std::list<Argument *> get_args() { return arguments_; }
     
@@ -54,6 +57,7 @@ private:
     std::list<BasicBlock *> basic_blocks_;    // basic blocks
     std::list<Argument *> arguments_;         // arguments
     Module *parent_;
+    unsigned seq_cnt_;
     // unsigned num_args_;
     // We don't need this, all value inside function should be unnamed
     // std::map<std::string, Value*> sym_table_;   // Symbol table of args/instructions

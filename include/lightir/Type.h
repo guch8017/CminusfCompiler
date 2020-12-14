@@ -30,11 +30,11 @@ public:
     TypeID get_type_id() const { return tid_; }
 
     bool is_void_type() const { return get_type_id() == VoidTyID; }
-
+    
     bool is_label_type() const { return get_type_id() == LabelTyID; }
 
     bool is_integer_type() const { return get_type_id() == IntegerTyID; }
-
+        
     bool is_function_type() const { return get_type_id() == FunctionTyID; }
 
     bool is_array_type() const { return get_type_id() == ArrayTyID; }
@@ -65,6 +65,10 @@ public:
 
     Type *get_pointer_element_type();
 
+    Type *get_array_element_type();
+
+    int get_size();
+    
     Module *get_module();
 
     std::string print();
