@@ -224,9 +224,9 @@ testcase-1              0.48                    0.39
 
   本次实验分阶段验收：
 
-  **阶段一**：验收代码阅读报告及相关思考题   
+  **阶段一**：验收代码阅读报告及相关思考题  ` report-phase1.md`
 
-  **阶段二**：阶段一验收后发布`lab5`示例`testcase`以及`lab4`答案
+  **阶段二**：验收lab5要求提交的代码及`report-phase2.md`
 
 * 提交要求  
   本实验是组队实验，我们将收取**队长**实验仓库中的内容
@@ -242,7 +242,7 @@ testcase-1              0.48                    0.39
     
       `./include/optimization/ActiveVars.hpp`，`./include/optimization/ConstPropagation.hpp`，`./include/optimization/LoopInvHoist.hpp` 
     
-      `./src/optimization/ActiveVars.cpp`，`./src/optimization/ConstPropagation.cpp`，`./src/optimization/LoopInvHoist.cpp` 文件和 `./Reports/lab5` 目录下报告，其中`report-phase1.md` 会在阶段一的ddl的时候进行验收；`report-phase2.md`会在阶段二的ddl的时候进行验收。
+      `./src/optimization/ActiveVars.cpp`，`./src/optimization/ConstPropagation.cpp`，`./src/optimization/LoopInvHoist.cpp` 文件和 `./Reports/lab5` 目录下报告，其中`report-phase1.md` 会在阶段一的ddl的时候进行验收；`report-phase2.md`以及实现代码会在阶段二的ddl的时候进行验收。
     
     * 选做Pass在`2021/01/11`之前都可以联系助教验收，然后由助教统一安排线下验收，该部分由学生现场演示，不需要撰写实验报告。
 * 评分标准: 
