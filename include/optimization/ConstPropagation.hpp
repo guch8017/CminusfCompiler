@@ -11,7 +11,13 @@
 #include <stack>
 #include <unordered_map>
 
+// tips: 用来判断value是否为ConstantFP/ConstantInt
+ConstantFP* cast_constantfp(Value *value);
+ConstantInt* cast_constantint(Value *value);
+
+
 // tips: ConstFloder类
+
 class ConstFolder
 {
 public:

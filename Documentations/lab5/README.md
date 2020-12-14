@@ -102,7 +102,7 @@
 #### Lab5代码与实验报告提交
 1. 基本优化Pass的代码都写在`src/optimization/`目录下面，头文件放入`include/optimization/`当中，最后只会在这两个目录下验收代码文件。
 2. 对于选做的优化Pass，需要发邮件给助教，统一线下验收。
-3. 需要在 `Reports/lab5/` 目录下撰写实验报告，且由队长说明成员贡献比率。其中，在 `report-phase1.md` 中完成代码阅读部分的报告，在 `report-phase2.md` 中解释你们的基本优化PASS和选做优化PASS的设计，遇到的困难和解决方案，由**队长**在 `contribution.md` 中解释每位队员的贡献，并说明贡献比例
+3. 需要在 `Reports/lab5/` 目录下撰写实验报告，且由队长说明成员贡献比率。其中，在 `report-phase1.md` 中完成代码阅读部分的报告，在 `report-phase2.md` 中解释你们的基本优化PASS的设计，遇到的困难和解决方案，由**队长**在 `contribution.md` 中解释每位队员的贡献，并说明贡献比例
 
 
 
@@ -112,7 +112,7 @@
 
 本次实验使用了由C++编写的 LightIR 来在IR层面完成优化化简，为了便于大家进行实验，助教对之前的`cminusfc`增加了选项，用来选择是否开启某种优化；另外，若想要另外单独去进行某个优化Pass的调试，可以利用助教给出的PassManager来进行Pass的注册和运行。
 
-在`include/PassManager.hpp`中，定义了一个用于管理Pass的类`PassManager`。它的作用是注册与运行Pass。它提供了以下接口：
+在`include/optimization/PassManager.hpp`中，定义了一个用于管理Pass的类`PassManager`。它的作用是注册与运行Pass。它提供了以下接口：
 ```cpp
 PassManager pm(module.get())
 pm.add_Pass<Mem2Reg>(emit)	//注册Pass，emit为true时打印优化后的IR
@@ -195,7 +195,7 @@ testcase-1              0.48                    0.39
 │   ├── ...
 │   └── lab5
 │       ├── report-phase1.md            <- lab5 所需提交的实验阅读部分报告，请详细说明你们的设计（需要上交）
-│       ├── report-phase2.md            <- lab5 所需提交的实验阅读部分报告，请详细说明你们的设计（需要上交）
+│       ├── report-phase2.md            <- lab5 所需提交的实验基本PASS实验报告，请详细说明你们的设计（需要上交）
 │       └── contribution.md             <- lab5 所需提交的队员贡献信息（需要上交）
 ├── src
 │   ├── ...
@@ -230,7 +230,8 @@ testcase-1              0.48                    0.39
   * 实验部分:
     * 需要填补 `./src/optimization/ActiveVars.cpp`，`./src/optimization/ConstPropagation.cpp.cpp`，`./src/optimization/LoopInvHoist.cpp`
     * 需要在 `./Reports/lab5/` 目录下撰写实验报告，且由队长说明成员贡献比率
-    * 本次实验收取 `./src/optimization/ActiveVars.cpp`，`./src/optimization/ConstPropagation.cpp.cpp`，`./src/optimization/LoopInvHoist.cpp` 文件和 `./Reports/lab5` 目录下报告
+    * 本次实验收取 `./src/optimization/ActiveVars.cpp`，`./src/optimization/ConstPropagation.cpp.cpp`，`./src/optimization/LoopInvHoist.cpp` 文件和 `./Reports/lab5` 目录下报告，其中`report-phase1.md` 会在阶段一的ddl的时候进行验收；`report-phase2.md`会在阶段二的ddl的时候进行验收。
+    * 选做PASS在`2021/01/11`之前都可以联系助教验收，然后由助教统一安排线下验收，该部分由学生现场演示，不需要撰写实验报告。
 * 评分标准: 
   * 待定
   * 禁止执行恶意代码，违者本次实验0分处理
@@ -239,13 +240,13 @@ testcase-1              0.48                    0.39
   
     **阶段一**：2020/12/21 23:59:59 (北京标准时间，UTC+8)  
   
-    **阶段二**：2020/01/04 23:59:59 (北京标准时间，UTC+8) 
+    **阶段二**：2021/01/04 23:59:59 (北京标准时间，UTC+8) 
   
   * `Hard Deadline`：
   
     **阶段一**：2020/12/28 23:59:59 (北京标准时间，UTC+8)  
   
-    **阶段二**：2020/01/11 23:59:59 (北京标准时间，UTC+8) 
+    **阶段二**：2021/01/11 23:59:59 (北京标准时间，UTC+8) 
   
   * 迟交需要邮件通知TA: 
     * 邮箱: 
