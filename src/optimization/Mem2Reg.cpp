@@ -110,7 +110,7 @@ void Mem2Reg::re_name(BasicBlock *bb)
         }
         if (instr->is_store())
         {
-            // step 5: push r_val of store instr as lval's lastest value define
+            // step 5: push r_val of store instr as lval's lastest definition
             auto l_val = static_cast<StoreInst *>(instr)->get_lval();
             auto r_val = static_cast<StoreInst *>(instr)->get_rval();
 
@@ -147,7 +147,7 @@ void Mem2Reg::re_name(BasicBlock *bb)
 
     for (auto instr : bb->get_instructions())
     {
-        // step 7: pop lval's lastest value define
+        // step 7: pop lval's lastest definition
         if(instr->is_store())
         {
             auto l_val = static_cast<StoreInst *>(instr)->get_lval();
