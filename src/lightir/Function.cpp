@@ -3,7 +3,7 @@
 #include "IRprinter.h"
 
 Function::Function(FunctionType *ty, const std::string &name, Module *parent)
-    : Value(ty, name), parent_(parent)
+    : Value(ty, name), parent_(parent), seq_cnt_(0)
 {
     // num_args_ = ty->getNumParams();
     parent->add_function(this);
@@ -30,9 +30,27 @@ unsigned Function::get_num_of_args() const
     return get_function_type()->get_num_of_args();
 }
 
+unsigned Function::get_num_basic_blocks() const
+{
+    return basic_blocks_.size();
+}
+
 Module *Function::get_parent() const
 {
     return parent_;
+}
+
+void Function::remove(BasicBlock* bb)
+{ 
+    basic_blocks_.remove(bb); 
+    for (auto pre : bb->get_pre_basic_blocks()) 
+    {
+        pre->remove_succ_basic_block(bb);
+    }
+    for (auto succ : bb->get_succ_basic_blocks()) 
+    {
+        succ->remove_pre_basic_block(bb);
+    }
 }
 
 void Function::build_args()
@@ -56,8 +74,8 @@ void Function::set_instr_name()
     {
         if ( seq.find(arg) == seq.end())
         {
-            auto seq_num = seq.size();
-            if ( arg->set_name(std::to_string(seq_num) ))
+            auto seq_num = seq.size() + seq_cnt_;
+            if ( arg->set_name("arg"+std::to_string(seq_num) ))
             {
                 seq.insert( {arg, seq_num} );
             }
@@ -67,8 +85,8 @@ void Function::set_instr_name()
     {
         if ( seq.find(bb) == seq.end())
         {
-            auto seq_num = seq.size();
-            if ( bb->set_name(std::to_string(seq_num) ))
+            auto seq_num = seq.size() + seq_cnt_;
+            if ( bb->set_name("label"+std::to_string(seq_num) ))
             {
                 seq.insert( {bb, seq_num} );
             }
@@ -77,14 +95,15 @@ void Function::set_instr_name()
         {
             if ( !instr->is_void() && seq.find(instr) == seq.end())
             {
-                auto seq_num = seq.size();
-                if ( instr->set_name(std::to_string(seq_num) ))
+                auto seq_num = seq.size() + seq_cnt_;
+                if ( instr->set_name("op"+std::to_string(seq_num) ))
                 {
                     seq.insert( {instr, seq_num} );
                 }
             }
         }
     }
+    seq_cnt_ += seq.size();
 }
 
 std::string Function::print()

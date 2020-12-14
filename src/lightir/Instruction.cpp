@@ -5,12 +5,20 @@
 #include "Instruction.h"
 #include "IRprinter.h"
 #include <cassert>
+#include <vector>
+#include <algorithm>
 
 Instruction::Instruction(Type *ty, OpID id, unsigned num_ops,
                         BasicBlock *parent)
     : User(ty, "", num_ops), op_id_(id), num_ops_(num_ops), parent_(parent)
 {
     parent_->add_instruction(this);
+}
+
+Instruction::Instruction(Type *ty, OpID id, unsigned num_ops)
+    : User(ty, "", num_ops), op_id_(id), num_ops_(num_ops), parent_(nullptr)
+{
+
 }
 
 Function *Instruction::get_function()
@@ -42,42 +50,42 @@ void BinaryInst::assertValid()
 
 BinaryInst *BinaryInst::create_add(Value *v1, Value *v2, BasicBlock *bb, Module *m)
 {
-    return new BinaryInst(Type::get_int32_type(m), Instruction::Add, v1, v2, bb);
+    return new BinaryInst(Type::get_int32_type(m), Instruction::add, v1, v2, bb);
 }
 
 BinaryInst *BinaryInst::create_sub(Value *v1, Value *v2, BasicBlock *bb, Module *m)
 {
-    return new BinaryInst(Type::get_int32_type(m), Instruction::Sub, v1, v2, bb);
+    return new BinaryInst(Type::get_int32_type(m), Instruction::sub, v1, v2, bb);
 }
 
 BinaryInst *BinaryInst::create_mul(Value *v1, Value *v2, BasicBlock *bb, Module *m)
 {
-    return new BinaryInst(Type::get_int32_type(m), Instruction::Mul, v1, v2, bb);
+    return new BinaryInst(Type::get_int32_type(m), Instruction::mul, v1, v2, bb);
 }
 
 BinaryInst *BinaryInst::create_sdiv(Value *v1, Value *v2, BasicBlock *bb, Module *m)
 {
-    return new BinaryInst(Type::get_int32_type(m), Instruction::Div, v1, v2, bb);
+    return new BinaryInst(Type::get_int32_type(m), Instruction::sdiv, v1, v2, bb);
 }
 
 BinaryInst *BinaryInst::create_fadd(Value *v1, Value *v2, BasicBlock *bb, Module *m)
 {
-    return new BinaryInst(Type::get_float_type(m), Instruction::FAdd, v1, v2, bb);
+    return new BinaryInst(Type::get_float_type(m), Instruction::fadd, v1, v2, bb);
 }
 
 BinaryInst *BinaryInst::create_fsub(Value *v1, Value *v2, BasicBlock *bb, Module *m)
 {
-    return new BinaryInst(Type::get_float_type(m), Instruction::FSub, v1, v2, bb);
+    return new BinaryInst(Type::get_float_type(m), Instruction::fsub, v1, v2, bb);
 }
 
 BinaryInst *BinaryInst::create_fmul(Value *v1, Value *v2, BasicBlock *bb, Module *m)
 {
-    return new BinaryInst(Type::get_float_type(m), Instruction::FMul, v1, v2, bb);
+    return new BinaryInst(Type::get_float_type(m), Instruction::fmul, v1, v2, bb);
 }
 
 BinaryInst *BinaryInst::create_fdiv(Value *v1, Value *v2, BasicBlock *bb, Module *m)
 {
-    return new BinaryInst(Type::get_float_type(m), Instruction::FDiv, v1, v2, bb);
+    return new BinaryInst(Type::get_float_type(m), Instruction::fdiv, v1, v2, bb);
 }
 
 std::string BinaryInst::print()
@@ -105,7 +113,7 @@ std::string BinaryInst::print()
 
 CmpInst::CmpInst(Type *ty, CmpOp op, Value *lhs, Value *rhs, 
             BasicBlock *bb)
-    : Instruction(ty, Instruction::Cmp, 2, bb), cmp_op_(op)
+    : Instruction(ty, Instruction::cmp, 2, bb), cmp_op_(op)
 {
     set_operand(0, lhs);
     set_operand(1, rhs);
@@ -153,7 +161,7 @@ std::string CmpInst::print()
 
 FCmpInst::FCmpInst(Type *ty, CmpOp op, Value *lhs, Value *rhs, 
             BasicBlock *bb)
-    : Instruction(ty, Instruction::FCmp, 2, bb), cmp_op_(op)
+    : Instruction(ty, Instruction::fcmp, 2, bb), cmp_op_(op)
 {
     set_operand(0, lhs);
     set_operand(1, rhs);
@@ -198,7 +206,7 @@ std::string FCmpInst::print()
 }
 
 CallInst::CallInst(Function *func, std::vector<Value *> args, BasicBlock *bb)
-    : Instruction(func->get_return_type(), Instruction::Call, args.size() + 1, bb)
+    : Instruction(func->get_return_type(), Instruction::call, args.size() + 1, bb)
 {
     assert(func->get_num_of_args() == args.size());
     int num_ops = args.size() + 1; 
@@ -249,7 +257,7 @@ std::string CallInst::print()
 
 BranchInst::BranchInst(Value *cond, BasicBlock *if_true, BasicBlock *if_false,
                     BasicBlock *bb)
-    : Instruction(Type::get_void_type(if_true->get_module()), Instruction::Br, 3, bb)
+    : Instruction(Type::get_void_type(if_true->get_module()), Instruction::br, 3, bb)
 {
     set_operand(0, cond);
     set_operand(1, if_true);
@@ -257,7 +265,7 @@ BranchInst::BranchInst(Value *cond, BasicBlock *if_true, BasicBlock *if_false,
 }
 
 BranchInst::BranchInst(BasicBlock *if_true, BasicBlock *bb)
-    : Instruction(Type::get_void_type(if_true->get_module()), Instruction::Br, 1, bb)
+    : Instruction(Type::get_void_type(if_true->get_module()), Instruction::br, 1, bb)
 {
     set_operand(0, if_true);
 }
@@ -265,11 +273,19 @@ BranchInst::BranchInst(BasicBlock *if_true, BasicBlock *bb)
 BranchInst *BranchInst::create_cond_br(Value *cond, BasicBlock *if_true, BasicBlock *if_false,
                                     BasicBlock *bb)
 {
+    if_true->add_pre_basic_block(bb);
+    if_false->add_pre_basic_block(bb);
+    bb->add_succ_basic_block(if_false);
+    bb->add_succ_basic_block(if_true);
+
     return new BranchInst(cond, if_true, if_false, bb);
 }
 
 BranchInst *BranchInst::create_br(BasicBlock *if_true, BasicBlock *bb)
 {
+    if_true->add_pre_basic_block(bb);
+    bb->add_succ_basic_block(if_true);
+ 
     return new BranchInst(if_true, bb);
 }
 
@@ -296,13 +312,13 @@ std::string BranchInst::print()
 }
 
 ReturnInst::ReturnInst(Value *val, BasicBlock *bb)
-    : Instruction(Type::get_void_type(bb->get_module()), Instruction::Ret, 1, bb)
+    : Instruction(Type::get_void_type(bb->get_module()), Instruction::ret, 1, bb)
 {
     set_operand(0, val);
 }
 
 ReturnInst::ReturnInst(BasicBlock *bb)
-    : Instruction(Type::get_void_type(bb->get_module()), Instruction::Ret, 0, bb)
+    : Instruction(Type::get_void_type(bb->get_module()), Instruction::ret, 0, bb)
 {
 
 }
@@ -342,7 +358,7 @@ std::string ReturnInst::print()
 }
 
 GetElementPtrInst::GetElementPtrInst(Value *ptr, std::vector<Value *> idxs, BasicBlock *bb)
-    : Instruction(PointerType::get(get_element_type(ptr, idxs)), Instruction::GEP, 
+    : Instruction(PointerType::get(get_element_type(ptr, idxs)), Instruction::getelementptr, 
                 1 + idxs.size(), bb)
 {
     set_operand(0, ptr);
@@ -356,7 +372,7 @@ Type *GetElementPtrInst::get_element_type(Value *ptr, std::vector<Value *> idxs)
 {
 
     Type *ty = ptr->get_type()->get_pointer_element_type();
-    assert(ty->is_array_type()||ty->is_integer_type()||ty->is_float_type());
+    assert( "GetElementPtrInst ptr is wrong type" && (ty->is_array_type()||ty->is_integer_type()||ty->is_float_type()) );
     if (ty->is_array_type())
     {
         ArrayType *arr_ty = static_cast<ArrayType *>(ty);
@@ -406,7 +422,7 @@ std::string GetElementPtrInst::print()
 }
 
 StoreInst::StoreInst(Value *val, Value *ptr, BasicBlock *bb)
-    : Instruction(Type::get_void_type(bb->get_module()), Instruction::Store, 2, bb)
+    : Instruction(Type::get_void_type(bb->get_module()), Instruction::store, 2, bb)
 {
     set_operand(0, val);
     set_operand(1, ptr);
@@ -431,7 +447,7 @@ std::string StoreInst::print()
 }
 
 LoadInst::LoadInst(Type *ty, Value *ptr, BasicBlock *bb)
-    : Instruction(ty, Instruction::Load, 1, bb)
+    : Instruction(ty, Instruction::load, 1, bb)
 {
     assert(ptr->get_type()->is_pointer_type());
     assert(ty == static_cast<PointerType *>(ptr->get_type())->get_element_type());
@@ -465,7 +481,7 @@ std::string LoadInst::print()
 }
 
 AllocaInst::AllocaInst(Type *ty, BasicBlock *bb)
-    : Instruction(PointerType::get(ty), Instruction::Alloca, 0, bb), alloca_ty_(ty)
+    : Instruction(PointerType::get(ty), Instruction::alloca, 0, bb), alloca_ty_(ty)
 {
 
 }
@@ -500,7 +516,7 @@ ZextInst::ZextInst(OpID op, Value *val, Type *ty, BasicBlock *bb)
 
 ZextInst *ZextInst::create_zext(Value *val, Type *ty, BasicBlock *bb)
 {
-    return new ZextInst(Instruction::ZExt, val, ty, bb);
+    return new ZextInst(Instruction::zext, val, ty, bb);
 }
 
 Type *ZextInst::get_dest_type() const
@@ -532,7 +548,7 @@ FpToSiInst::FpToSiInst(OpID op, Value *val, Type *ty, BasicBlock *bb)
 
 FpToSiInst *FpToSiInst::create_fptosi(Value *val, Type *ty, BasicBlock *bb)
 {
-    return new FpToSiInst(Instruction::FpToSi, val, ty, bb);
+    return new FpToSiInst(Instruction::fptosi, val, ty, bb);
 }
 
 Type *FpToSiInst::get_dest_type() const
@@ -564,7 +580,7 @@ SiToFpInst::SiToFpInst(OpID op, Value *val, Type *ty, BasicBlock *bb)
 
 SiToFpInst *SiToFpInst::create_sitofp(Value *val, Type *ty, BasicBlock *bb)
 {
-    return new SiToFpInst(Instruction::SiToFp, val, ty, bb);
+    return new SiToFpInst(Instruction::sitofp, val, ty, bb);
 }
 
 Type *SiToFpInst::get_dest_type() const
@@ -585,5 +601,57 @@ std::string SiToFpInst::print()
     instr_ir += print_as_op(this->get_operand(0), false);
     instr_ir += " to ";
     instr_ir += this->get_dest_type()->print();
+    return instr_ir; 
+}
+
+PhiInst::PhiInst(OpID op, std::vector<Value *> vals, std::vector<BasicBlock *> val_bbs, Type *ty, BasicBlock *bb)
+    : Instruction(ty, op, 2*vals.size() )
+{
+    for ( int i = 0; i < vals.size(); i++)
+    {
+        set_operand(2*i, vals[i]);
+        set_operand(2*i+1, val_bbs[i]);
+    }
+    this->set_parent(bb);
+}
+
+PhiInst *PhiInst::create_phi( Type *ty, BasicBlock *bb)
+{
+    std::vector<Value *> vals;
+    std::vector<BasicBlock *> val_bbs;
+    return new PhiInst(Instruction::phi, vals, val_bbs, ty, bb);
+}
+
+std::string PhiInst::print()
+{
+    std::string instr_ir;
+    instr_ir += "%";
+    instr_ir += this->get_name();
+    instr_ir += " = ";
+    instr_ir += this->get_module()->get_instr_op_name( this->get_instr_type() );
+    instr_ir += " ";
+    instr_ir += this->get_operand(0)->get_type()->print();
+    instr_ir += " ";
+    for (int i = 0; i < this->get_num_operand()/2; i++)
+    {
+        if( i > 0 )
+            instr_ir += ", ";
+        instr_ir += "[ ";
+        instr_ir += print_as_op(this->get_operand(2*i), false);
+        instr_ir += ", ";
+        instr_ir += print_as_op(this->get_operand(2*i+1), false);
+        instr_ir += " ]";
+    }
+    if ( this->get_num_operand()/2 < this->get_parent()->get_pre_basic_blocks().size() )
+    {
+        for ( auto pre_bb : this->get_parent()->get_pre_basic_blocks() )
+        {
+            if (std::find(this->get_operands().begin(), this->get_operands().end(), static_cast<Value *>(pre_bb)) == this->get_operands().end())
+            {
+                // find a pre_bb is not in phi
+                instr_ir += ", [ undef, " +print_as_op(pre_bb, false)+" ]";
+            }
+        }
+    }
     return instr_ir; 
 }

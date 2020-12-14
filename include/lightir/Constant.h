@@ -29,6 +29,7 @@ public:
     static int get_value(ConstantInt *const_val) { return const_val->value_; }
     int get_value() { return value_; }
     static ConstantInt *get(int val, Module *m);
+    static ConstantInt *get(bool val, Module *m);
     virtual std::string print() override;
 };
 

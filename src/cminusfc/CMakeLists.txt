@@ -11,9 +11,10 @@ add_executable(
 
 target_link_libraries(
     cminusfc
-    syntax
-    common
+    OP_lib
     IR_lib
+    common
+    syntax
 )
 
 install(

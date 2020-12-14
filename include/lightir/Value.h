@@ -37,6 +37,9 @@ public:
     }
     std::string get_name() const;
 
+    void replace_all_use_with(Value *new_val);
+    void remove_use(Value *val);
+
     virtual std::string print() = 0;
 private:
     Type *type_;

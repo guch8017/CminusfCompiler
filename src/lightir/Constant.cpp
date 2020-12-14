@@ -7,7 +7,10 @@ ConstantInt *ConstantInt::get(int val, Module *m)
 {
     return new ConstantInt(Type::get_int32_type(m), val);
 }
-
+ConstantInt *ConstantInt::get(bool val, Module *m)
+{
+    return new ConstantInt(Type::get_int1_type(m),val?1:0);
+}
 std::string ConstantInt::print()
 {
     std::string const_ir;

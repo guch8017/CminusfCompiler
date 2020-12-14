@@ -1,6 +1,6 @@
 #include "Module.h"
 
-Module::Module(std::string name)
+Module::Module(std::string name) 
     : module_name_(name)
 {
     void_ty_ = new Type(Type::VoidTyID, this);
@@ -9,30 +9,30 @@ Module::Module(std::string name)
     int32_ty_ = new IntegerType(32, this);
     float32_ty_ = new FloatType(this);
     // init instr_id2string
-    instr_id2string_.insert({ Instruction::Ret, "ret" });
-    instr_id2string_.insert({ Instruction::Br, "br" });
+    instr_id2string_.insert({ Instruction::ret, "ret" }); 
+    instr_id2string_.insert({ Instruction::br, "br" }); 
+    
+    instr_id2string_.insert({ Instruction::add, "add" });
+    instr_id2string_.insert({ Instruction::sub, "sub" });
+    instr_id2string_.insert({ Instruction::mul, "mul" });
+    instr_id2string_.insert({ Instruction::sdiv, "sdiv" });
+    
+    instr_id2string_.insert({ Instruction::fadd, "fadd" });
+    instr_id2string_.insert({ Instruction::fsub, "fsub" });
+    instr_id2string_.insert({ Instruction::fmul, "fmul" });
+    instr_id2string_.insert({ Instruction::fdiv, "fdiv" });
 
-    instr_id2string_.insert({ Instruction::Add, "add" });
-    instr_id2string_.insert({ Instruction::Sub, "sub" });
-    instr_id2string_.insert({ Instruction::Mul, "mul" });
-    instr_id2string_.insert({ Instruction::Div, "sdiv" });
-
-    instr_id2string_.insert({ Instruction::FAdd, "fadd" });
-    instr_id2string_.insert({ Instruction::FSub, "fsub" });
-    instr_id2string_.insert({ Instruction::FMul, "fmul" });
-    instr_id2string_.insert({ Instruction::FDiv, "fdiv" });
-
-    instr_id2string_.insert({ Instruction::Alloca, "alloca" });
-    instr_id2string_.insert({ Instruction::Load, "load" });
-    instr_id2string_.insert({ Instruction::Store, "store" });
-    instr_id2string_.insert({ Instruction::Cmp, "icmp" });
-    instr_id2string_.insert({ Instruction::FCmp, "fcmp" });
-    instr_id2string_.insert({ Instruction::PHI, "phi" });
-    instr_id2string_.insert({ Instruction::Call, "call" });
-    instr_id2string_.insert({ Instruction::GEP, "getelementptr" });
-    instr_id2string_.insert({ Instruction::ZExt, "zext" });
-    instr_id2string_.insert({ Instruction::SiToFp, "sitofp" });
-    instr_id2string_.insert({ Instruction::FpToSi, "fptosi" });
+    instr_id2string_.insert({ Instruction::alloca, "alloca" });
+    instr_id2string_.insert({ Instruction::load, "load" });
+    instr_id2string_.insert({ Instruction::store, "store" });
+    instr_id2string_.insert({ Instruction::cmp, "icmp" });
+    instr_id2string_.insert({ Instruction::fcmp, "fcmp" });
+    instr_id2string_.insert({ Instruction::phi, "phi" });
+    instr_id2string_.insert({ Instruction::call, "call" });
+    instr_id2string_.insert({ Instruction::getelementptr, "getelementptr" });
+    instr_id2string_.insert({ Instruction::zext, "zext" });
+    instr_id2string_.insert({ Instruction::sitofp, "sitofp" });
+    instr_id2string_.insert({ Instruction::fptosi, "fptosi" });
 }
 
 Module::~Module()
@@ -101,15 +101,24 @@ void Module::add_function(Function *f)
 {
     function_list_.push_back(f);
 }
-
+std::list<Function* > Module::get_functions(){
+    return function_list_;
+}
 void Module::add_global_variable(GlobalVariable* g)
 {
     global_list_.push_back(g);
 }
+std::list<GlobalVariable *> Module::get_global_variable(){
+    return global_list_;
+}
 
 void Module::set_print_name()
 {
-
+    for (auto func : this->get_functions())
+    {
+        func->set_instr_name();
+    }
+    return ;
 }
 
 std::string Module::print()

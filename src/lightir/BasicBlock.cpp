@@ -1,6 +1,7 @@
 #include "Module.h"
 #include "BasicBlock.h"
 #include "Function.h"
+#include "IRprinter.h"
 #include <cassert>
 
 BasicBlock::BasicBlock(Module *m, const std::string &name = "",
@@ -18,10 +19,18 @@ Module *BasicBlock::get_module()
 
 void BasicBlock::add_instruction(Instruction *instr)
 {
-    // auto seq = atoi(this->getName().c_str());
-    // seq += instr_list_.size();
-    // instr->setName(std::to_string(seq));
     instr_list_.push_back(instr);
+}
+
+void BasicBlock::add_instr_begin(Instruction *instr)
+{
+    instr_list_.push_front(instr);
+}
+
+void BasicBlock::delete_instr( Instruction *instr )
+{
+    instr_list_.remove(instr);
+    instr->remove_use_of_ops();
 }
 
 const Instruction *BasicBlock::get_terminator() const
@@ -31,11 +40,11 @@ const Instruction *BasicBlock::get_terminator() const
     }
     switch (instr_list_.back()->get_instr_type())
     {
-    case Instruction::Ret:
+    case Instruction::ret:
         return instr_list_.back();
         break;
     
-    case Instruction::Br:
+    case Instruction::br:
         return instr_list_.back();
         break;
 
@@ -55,6 +64,19 @@ std::string BasicBlock::print()
     std::string bb_ir;
     bb_ir += this->get_name();
     bb_ir += ":";
+    // print prebb
+    if(!this->get_pre_basic_blocks().empty())
+    {
+        bb_ir += "                                                ; preds = ";
+    }
+    for (auto bb : this->get_pre_basic_blocks() )
+    {
+        if( bb != *this->get_pre_basic_blocks().begin() )
+            bb_ir += ", ";
+        bb_ir += print_as_op(bb, false);
+    }
+    
+    // print prebb
     if ( !this->get_parent() )
     {
         bb_ir += "\n";

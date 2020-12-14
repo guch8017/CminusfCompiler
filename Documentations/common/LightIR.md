@@ -172,8 +172,8 @@
 ##### Add FAdd
 - 概念：`add`指令返回其两个`i32`类型的操作数之和，返回值为`i32`类型，`fadd`指令返回其两个`float`类型的操作数之和，返回值为`float`类型
 - 格式：
-  - `<result> = add <type> <op1> <op2>`
-  - `<result> = fadd <type> <op1> <op2>`
+  - `<result> = add <type> <op1>, <op2>`
+  - `<result> = fadd <type> <op1>, <op2>`
 - 例子：
   - `%2 = add i32 %1, %0` 
   - `%2 = fadd float %1, %0` 
@@ -210,18 +210,18 @@
 
 #### CastInst
 ##### ZExt    
-- 概念：`zext`指令将其操作数**零**扩展为`ty2`类型。
-- 格式：`<result> = zext <type> <value> to <ty2>`
+- 概念：`zext`指令将其操作数**零**扩展为`type2`类型。
+- 格式：`<result> = zext <type> <value> to <type2>`
 - 例子：`%1 = zext i1 %0 to i32`
 
 ##### FpToSi
-- 概念：`fptosi`指令将浮点值转换为`ty2`（整数）类型。
-- 格式：`<result> = fptosi <type> <value> to <ty2>`
+- 概念：`fptosi`指令将浮点值转换为`type2`（整数）类型。
+- 格式：`<result> = fptosi <type> <value> to <type2>`
 - 例子：`%Y = fptosi float 1.0E-247 to i32`
 
 ##### SiToFp
-- 概念：`sitofp`指令将有符号整数转换为`ty2`（浮点数）类型。
-- 格式：`<result> = sitofp <type> <value> to <ty2>`
+- 概念：`sitofp`指令将有符号整数转换为`type2`（浮点数）类型。
+- 格式：`<result> = sitofp <type> <value> to <type2>`
 - 例子：`%X = sitofp i32 257 to float`
 
 #### Other operators
@@ -232,7 +232,7 @@
     - `<cond> = eq | ne | sgt | sge | slt | sle`
   - `<result> = fcmp <cond> <type> <op1>, <op2>`
     - `<cond> = eq | ne | ugt | uge | ult | ule`
-- 例子：`i1 %2 = icmp sge i32 %0 i32 %1`
+- 例子：`i1 %2 = icmp sge i32 %0, %1`
 
 ##### Call
 - 概念：`call`指令用于使控制流转移到指定的函数，其传入参数绑定到指定的值。 在被调用函数中执行`ret`指令后，控制流程将在函数调用后继续执行该指令，并且该函数的返回值绑定到`result`参数。
@@ -263,23 +263,46 @@
 - 成员：
   
   - instr_list_：指令链表
+  - pre_basic_blocks_： bb前驱集合
+  - succ_basic_blocks_：bb后继集合
   
 - API: 
 
   ```c++
   static BasicBlock *create(Module *m, const std::string &name , Function *parent )
   // 创建并返回BB块，参数分别是BB块所属的Module，name是其名字默认为空，BB块所属的Function
+  Function *get_parent();
+  // 返回BB块所属的函数
+  Module *get_module();
+  // 返回BB块所属的Module
+  Instruction *get_terminator();
+  // 返回BB块的终止指令(ret|br)若BB块最后一条指令不是终止指令返回null
+  void add_instruction(Instruction *instr);
+  // 将instr指令添加到此BB块指令链表结尾，调用IRBuilder里来创建函数会自动调用此方法
+  void add_instr_begin(Instruction *instr);
+  // 将instr指令添加到此BB块指令链表开头
+void delete_instr(Instruction *instr);
+  // 将instr指令从BB块指令链表中移除，同时调用api维护好instr的操作数的use链表。
+  bool empty();
+  // BB块中为空返回true
+  int get_num_of_instr();
+  // 返回BB块中指令的数目
+  std::list<Instruction *> get_instructions();
+  //返回BB块的指令链表
+  void erase_from_parent();
+  // 将此BB块从所属函数的bb链表中移除
+      
+  /****************api about cfg****************/
+  std::list<BasicBlock *> &get_pre_basic_blocks() // 返回前驱快集合
+  std::list<BasicBlock *> &get_succ_basic_blocks() // 返回后继块集合
+  void add_pre_basic_block(BasicBlock *bb) // 添加前驱块
+  void add_succ_basic_block(BasicBlock *bb) // 添加后继块
+  void remove_pre_basic_block(BasicBlock *bb) // 移除前驱块
+  void remove_succ_basic_block(BasicBlock *bb) // 移除后继块
+  /****************api about cfg****************/
   
-  Function *get_parent() // 返回BB块所属的函数
-  Module *get_module() // 返回BB块所属的Module
-  Instruction *get_terminator() // 返回BB块的终止指令(ret|br)若BB块最后一条指令不是终止指令返回null
-  void add_instruction(Instruction *instr) // 将instr指令添加到此BB块中，调用IRBuilder里来创建函数会自动调用此方法
-  bool empty() // BB块中为空返回true
-  int get_num_of_instr() // 返回BB块中指令的数目
-  std::list<Instruction *> get_instructions() //返回BB块的指令链表
-  void erase_from_parent() // 将此BB块从所属函数的bb链表中移除
   ```
-
+  
   
 ### Constant
 - 继承：User
@@ -352,6 +375,8 @@
   // 将bb添加至Function的bb链表上（调用bb里的创建函数时会自动调用此函数挂在function的bb链表上）
   unsigned get_num_of_args() const;
   // 得到函数形参数数量
+  unsigned get_num_basic_blocks() const;
+  // 得到函数基本块数量
   Module *get_parent() const;
   // 得到函数所属的Module
   std::list<Argument *>::iterator arg_begin() 
@@ -364,6 +389,8 @@
   // 返回函数bb链表
   std::list<Argument *> get_args() 
   // 返回函数的形参链表
+  void set_instr_name();
+  // 给函数中未命名的基本块和指令命名
   ```
 
   
@@ -424,11 +451,20 @@
 - API：
 
   ```cpp
-  Type *get_void_type(); // 得到IR中的void类型其他类型可以用类似的API得到(推荐取得类型采用lab3助教提供的方法Type::get())
-  void add_function(Function *f);// 将f挂在module的function链表上，在function被创建的时候会自动调用此方法来添加function
-  void add_global_variable(GlobalVariable* g);// 将g挂在module的GlobalVariable链表上，在GlobalVariable被创建的时候会自动调用此方法来添加GlobalVariable
+  Type *get_void_type(); 
+  // 得到IR中的void类型其他类型可以用类似的API得到(推荐取得类型采用lab3助教提供的方法Type::get())
+  void add_function(Function *f);
+  // 将f挂在module的function链表上，在function被创建的时候会自动调用此方法来添加function
+void add_global_variable(GlobalVariable* g);
+  // 将g挂在module的GlobalVariable链表上，在GlobalVariable被创建的时候会自动调用此方法来添加GlobalVariable
+  std::list<GlobalVariable *> get_global_variable();
+  // 获取全局变量列表
+  std::string get_instr_op_name( Instruction::OpID instr )；
+  // 获取instr对应的指令名(打印ir时调用)
+  void set_print_name();
+  // 设置打印ir的指令与bb名字；
   ```
-
+  
   
 ### Type
 - 含义：IR的类型，该类是所有类型的超类
@@ -507,6 +543,8 @@
       // 返回指针指向的类型
       static PointerType *get(Type *contained);
       // 创建指向contained类型的指针类型
+      Type *get_pointer_element_type()
+      // 对于pointertype而言返回指针指向的类型，其他则返回nullptr
       ```
   
 - API:
@@ -514,14 +552,15 @@
   ```cpp
   bool is_void_type()// 判断是否是void类型其他类型有类似API请查看Type.h
   static Type *get_void_type(Module *m);// 得到void类型
-  Type *get_pointer_element_type();// 若是pointertype则返回指向的类型，若不是则返回nullptr。
+  Type *get_pointer_element_type();// 若是PointerType则返回指向的类型，若不是则返回nullptr。
+  Type *get_array_element_type();// 若是ArrayType则返回指向的类型，若不是则返回nullptr。
   ```
-
+  
   
 ### User
 - 继承：从value继承
 
-- 含义：使用者，提供一个操作数表，表中每个操作数都直接指向一个 Value, 提供了 use-def 信息，它本身是 Value 的子类， Value 类会维护一个该数据使用者的列表，提供def-use信息。简单来说操作数表表示我用了谁，该数据使用者列表表示谁用了我。这两个表在后续的优化实验会比较重要请务必理解。
+- 含义：使用者，提供一个操作数表，表中每个操作数都直接指向一个 Value, 提供了 use-def 信息，它本身是 Value 的子类， Value 类会维护一个该数据使用者的列表，提供def-use信息。简单来说操作数表表示我用了谁，该数据使用者列表表示谁用了我。这两个表在后续的**优化实验**会比较重要请务必理解。
 
 - 成员：
   - operands_：参数列表，表示这个使用者所用到的参数
@@ -534,11 +573,18 @@
   // 从user的操作数链表中取出第i个操作数
   void set_operand(unsigned i, Value *v);
   // 将user的第i个操作数设为v
+  void add_operand(Value *v);
+  // 将v挂到User的操作数链表上
   unsigned get_num_operand() const;
   // 得到操作数链表的大小
+  void remove_use_of_ops();
+  // 从User的操作数链表中的所有操作数处的use_list_ 移除该User;
+  void remove_operands(int index1,int index2);
+  // 移除操作数链表中索引为index1-index2的操作数，例如想删除第0个操作数：remove_operands(0,0)
   ```
 
-  
+
+
 
 ### Value 
 - 含义：最基础的类，代表一个操作数，代表一个可能用于指令操作数的带类型数据
@@ -553,10 +599,16 @@
   ```cpp
   Type *get_type() const //返回这个操作数的类型
   std::list<Use> &get_use_list() // 返回value的使用者链表
+  void add_use(Value *val, unsigned arg_no = 0);
+  // 添加val至this的使用者链表上
+  void replace_all_use_with(Value *new_val);
+  // 将this在所有的地方用new_val替代，并且维护好use_def与def_use链表
+  void remove_use(Value *val);
+  // 将val从this的use_list_中移除
   ```
 
 
 
 ### 总结
 
-助教在接口文档里筛选了可能会需要用到的接口，如果对API有问题的请移步issue讨论，本次lightir接口由助教自行设计实现，并做了大量测试，如有对助教的实现方法有异议或者建议的也请移步issue讨论，**请不要直接修改助教的代码，若因修改助教代码造成后续实验仓库合并的冲突请自行解决**。
+助教在接口文档里筛选了可能会需要用到的接口，如果对API有问题的请移步issue讨论，本次`lightir`接口由助教自行设计实现，并做了大量测试，如有对助教的实现方法有异议或者建议的也请移步issue讨论，**请不要直接修改助教的代码，若因修改助教代码造成后续实验仓库合并的冲突请自行解决**。
