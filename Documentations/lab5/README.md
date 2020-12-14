@@ -116,8 +116,12 @@
 ```cpp
 PassManager pm(module.get())
 pm.add_Pass<Mem2Reg>(emit)	//注册Pass，emit为true时打印优化后的IR
-pm.run()	//按照注册的顺序运行Pass
+pm.run()	//按照注册的顺序运行Pass的run()函数
 ```
+基本Pass开发：
+
+每一个Pass有一个cpp文件和对应的hpp文件，可以在hpp里定义辅助类或者成员变量使用，在cpp里的run()函数实现你的Pass。
+
 ## 2. 运行与调试
 
 ### 运行 cminusfc
@@ -228,10 +232,19 @@ testcase-1              0.48                    0.39
   本实验是组队实验，我们将收取**队长**实验仓库中的内容
   
   * 实验部分:
-    * 需要填补 `./src/optimization/ActiveVars.cpp`，`./src/optimization/ConstPropagation.cpp.cpp`，`./src/optimization/LoopInvHoist.cpp`
+    * 需要填补 
+    
+      `./include/optimization/ActiveVars.hpp`，`./include/optimization/ConstPropagation.hpp`，`./include/optimization/LoopInvHoist.hpp` `./src/optimization/ActiveVars.cpp`，`./src/optimization/ConstPropagation.cpp.cpp`，`./src/optimization/LoopInvHoist.cpp`
+    
     * 需要在 `./Reports/lab5/` 目录下撰写实验报告，且由队长说明成员贡献比率
-    * 本次实验收取 `./src/optimization/ActiveVars.cpp`，`./src/optimization/ConstPropagation.cpp.cpp`，`./src/optimization/LoopInvHoist.cpp` 文件和 `./Reports/lab5` 目录下报告，其中`report-phase1.md` 会在阶段一的ddl的时候进行验收；`report-phase2.md`会在阶段二的ddl的时候进行验收。
-    * 选做PASS在`2021/01/11`之前都可以联系助教验收，然后由助教统一安排线下验收，该部分由学生现场演示，不需要撰写实验报告。
+    
+    * 本次实验收取 
+    
+      `./include/optimization/ActiveVars.hpp`，`./include/optimization/ConstPropagation.hpp`，`./include/optimization/LoopInvHoist.hpp` 
+    
+      `./src/optimization/ActiveVars.cpp`，`./src/optimization/ConstPropagation.cpp`，`./src/optimization/LoopInvHoist.cpp` 文件和 `./Reports/lab5` 目录下报告，其中`report-phase1.md` 会在阶段一的ddl的时候进行验收；`report-phase2.md`会在阶段二的ddl的时候进行验收。
+    
+    * 选做Pass在`2021/01/11`之前都可以联系助教验收，然后由助教统一安排线下验收，该部分由学生现场演示，不需要撰写实验报告。
 * 评分标准: 
   * 待定
   * 禁止执行恶意代码，违者本次实验0分处理
