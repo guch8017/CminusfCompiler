@@ -5,8 +5,10 @@
 void Dominators::run()
 {
     for (auto f : m_->get_functions()) {
+        // 遍历所有函数
         if (f->get_basic_blocks().size() == 0)
             continue;
+        // 初始化，创建空set
         for (auto bb : f->get_basic_blocks() )
         {
             doms_.insert({bb ,{}});
@@ -14,7 +16,7 @@ void Dominators::run()
             dom_frontier_.insert({bb ,{}});
             dom_tree_succ_blocks_.insert({bb ,{}});
         }
-        
+        // 创建深度优先后序遍历的顺序列表
         create_reverse_post_order(f);
         create_idom(f);
         create_dominance_frontier(f);
@@ -62,15 +64,28 @@ void Dominators::create_doms(Function *f)
     }
 }
 
+/**
+ * 后序遍历
+ * 
+ * 运行结束后reverse_post_order_, post_order_id_被正确赋值
+ */
 void Dominators::create_reverse_post_order(Function *f)
 {
     reverse_post_order_.clear();
     post_order_id_.clear();
     std::set<BasicBlock *> visited;
+    // 从函数入口进行遍历
     post_order_visit(f->get_entry_block(), visited);
     reverse_post_order_.reverse();
 }
 
+/**
+ * 后序遍历(?)
+ * 
+ * 形成DFS搜索树
+ * @param bb 基本块
+ * @param visited 已访问的基本块集合
+ */
 void Dominators::post_order_visit(BasicBlock *bb, std::set<BasicBlock *> &visited)
 {
     visited.insert(bb);
@@ -85,15 +100,18 @@ void Dominators::post_order_visit(BasicBlock *bb, std::set<BasicBlock *> &visite
 void Dominators::create_idom(Function *f)
 {   
     // init
+    // 初始化，所有基本块都不被支配
 	for (auto bb : f->get_basic_blocks())
         set_idom(bb, nullptr);
     auto root = f->get_entry_block();
+    // 函数入口节点被自身支配
     set_idom(root, root);
 
     // iterate
 	bool changed = true;
     while (changed) {
         changed = false;
+        // 从根节点开始遍历逆序后序遍历DFS搜索树
         for (auto bb : this->reverse_post_order_) {
             if (bb == root) {
                 continue;
@@ -101,6 +119,7 @@ void Dominators::create_idom(Function *f)
 
             // find one pred which has idom
             BasicBlock *pred = nullptr;
+            // 遍历基本块前继中的所有节点，若有节点已经被直接支配了，则该节点被已被支配的前继节点支配
             for (auto p : bb->get_pre_basic_blocks()) {
                 if (get_idom(p)) {
                     pred = p;
@@ -108,7 +127,9 @@ void Dominators::create_idom(Function *f)
                 }
             }
             assert(pred);
-
+            // 遍历基本块除pred外的所有前继节点
+            // 找到bb的所有前继节点的最小公共祖先
+            // 若与bb当前的祖先不一致则更新它并进行下一轮循环
             BasicBlock *new_idom = pred;
             for (auto p : bb->get_pre_basic_blocks()) {
                 if (p == pred)
@@ -127,6 +148,7 @@ void Dominators::create_idom(Function *f)
 }
 
 // find closest parent of b1 and b2
+// 返回支配树上的最小公共祖先
 BasicBlock *Dominators::intersect(BasicBlock *b1, BasicBlock *b2)
 {
     while (b1 != b2) {

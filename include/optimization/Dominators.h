@@ -46,8 +46,8 @@ private:
     void post_order_visit(BasicBlock *bb, std::set<BasicBlock *> &visited);
     BasicBlock *intersect(BasicBlock *b1, BasicBlock *b2);
 
-    std::list<BasicBlock *> reverse_post_order_;
-    std::map<BasicBlock *, int> post_order_id_;   // the root has highest ID
+    std::list<BasicBlock *> reverse_post_order_;    // 记录后序遍历访问次序
+    std::map<BasicBlock *, int> post_order_id_;   // 记录后序遍历过程中，基本块被访问的次序，数字表示</br>the root has highest ID
 
     std::map<BasicBlock *, std::set<BasicBlock *>> doms_;   // dominance set
     std::map<BasicBlock *, BasicBlock *>idom_ ;    // immediate dominance
