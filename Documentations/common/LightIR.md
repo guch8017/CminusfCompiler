@@ -281,7 +281,7 @@
   // 将instr指令添加到此BB块指令链表结尾，调用IRBuilder里来创建函数会自动调用此方法
   void add_instr_begin(Instruction *instr);
   // 将instr指令添加到此BB块指令链表开头
-void delete_instr(Instruction *instr);
+  void delete_instr(Instruction *instr);
   // 将instr指令从BB块指令链表中移除，同时调用api维护好instr的操作数的use链表。
   bool empty();
   // BB块中为空返回true
@@ -321,6 +321,7 @@ void delete_instr(Instruction *instr);
       int get_value() // 返回该常数类型中存的常数值
       static int get_value(ConstantInt *const_val)// 返回该常数类型const_val中存的常数值
       static ConstantInt *get(int val, Module *m) // 以val值来创建常数类
+      static ConstantInt *get(bool val, Module *m) // 以val值来创建bool常数类
       ```
     
   - ConstantFP:
@@ -455,7 +456,7 @@ void delete_instr(Instruction *instr);
   // 得到IR中的void类型其他类型可以用类似的API得到(推荐取得类型采用lab3助教提供的方法Type::get())
   void add_function(Function *f);
   // 将f挂在module的function链表上，在function被创建的时候会自动调用此方法来添加function
-void add_global_variable(GlobalVariable* g);
+  void add_global_variable(GlobalVariable* g);
   // 将g挂在module的GlobalVariable链表上，在GlobalVariable被创建的时候会自动调用此方法来添加GlobalVariable
   std::list<GlobalVariable *> get_global_variable();
   // 获取全局变量列表
