@@ -8,31 +8,14 @@
 #include "Value.h"
 #include "IRBuilder.h"
 #include <vector>
+#include <queue>
 #include <stack>
 #include <unordered_map>
 
-// tips: 用来判断value是否为ConstantFP/ConstantInt
-ConstantFP* cast_constantfp(Value *value);
-ConstantInt* cast_constantint(Value *value);
-
-
-// tips: ConstFloder类
-
-class ConstFolder
-{
-public:
-    ConstFolder(Module *m) : module_(m) {}
-    ConstantInt *compute(
-        Instruction::OpID op,
-        ConstantInt *value1,
-        ConstantInt *value2);
-    // ...
-private:
-    Module *module_;
-};
-
 class ConstPropagation : public Pass
 {
+private:
+    void process_bb(BasicBlock* bb);
 public:
     ConstPropagation(Module *m) : Pass(m) {}
     void run();
