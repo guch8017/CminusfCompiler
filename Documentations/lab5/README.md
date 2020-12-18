@@ -21,7 +21,7 @@
 
 经过 Lab4，相信大家已经掌握了 LightIR 的结构，并且对于 LLVM IR 也有了更深的理解。在本次实验中，我们要在理解SSA（静态单赋值）格式的基础上，实现三个简单的块内优化Pass与分析Pass：常量传播，循环不变式外提，活跃变量分析。
 
-值得一提的是`lightir`中的[lightir.md](../common/lightir.md)中的User类中`operands_`成员也就是操作数列表，以及Value类的`use_list_`成员，这两个链表描述了指令间的数据依赖关系，请注意查看。
+值得一提的是`LightIR`中的[LightIR核心类介绍.md](../common/LightIR.md)中的User类中`operands_`成员也就是操作数列表，以及Value类的`use_list_`成员，这两个链表描述了指令间的数据依赖关系，请注意查看。
 
 ### 主要工作
 
