@@ -268,27 +268,36 @@ void ConstPropagation::run()
         }
         for(BasicBlock* bb: tbdBB){
             // 删除Phi指令中的对应项，修复Phi指令的正确性
+            // 此处需要更新Phi函数引用的路径。对于被删除的路径后的所有Path均需要更新arg no，否则会导致使用者链异常
             // TODO：入口为空时的处理？单个Phi指令替换成常量？
             for(auto instr: bb->get_instructions()){
                 bb->delete_instr(instr);
             }
             auto l = bb->get_use_list();
             for(Use use: l){
+                use.val_->remove_use(bb);
                 PhiInst *pinstr = dynamic_cast<PhiInst*>(use.val_);
                 if(pinstr != nullptr){
+                    int indTBR = -1;
                     for(int i = 0; i < pinstr->get_operands().size(); ++i){
                         if(pinstr->get_operands()[i] == bb){
-                            pinstr->remove_operands(i - 1, i);
+                            indTBR = i;
+                            for(int j = i + 2; j < pinstr->get_operands().size(); j += 1){
+                                pinstr->get_operands()[j]->remove_use(pinstr);
+                                pinstr->get_operands()[j]->add_use(pinstr, j - 2);
+                            }
                             break;
                         }
+                    }
+                    if(indTBR > 0){
+                        pinstr->remove_operands(indTBR - 1, indTBR);
                     }
                     
                 }
             }
-            
             func->remove(bb);
         }
-        /*
+        
         // 只有一条无条件跳转指令的代码块，合并
         bool changed = true;
         while (changed)
@@ -322,6 +331,6 @@ void ConstPropagation::run()
                 func->get_basic_blocks().push_front(newEntry);
             }
         }
-        */
+        
     }
 }

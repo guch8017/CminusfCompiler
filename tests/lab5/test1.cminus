@@ -1,0 +1,14 @@
+void main(void){
+    int a;
+    int b;
+    a = 1;
+    b = 0;
+    if(a){
+        if(b){
+            a = 2;
+        }else{
+            a = 3;
+        }
+    }
+    output(a);
+}
