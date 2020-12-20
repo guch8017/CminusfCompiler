@@ -281,13 +281,13 @@
   // 将instr指令添加到此BB块指令链表结尾，调用IRBuilder里来创建函数会自动调用此方法
   void add_instr_begin(Instruction *instr);
   // 将instr指令添加到此BB块指令链表开头
-void delete_instr(Instruction *instr);
+  void delete_instr(Instruction *instr);
   // 将instr指令从BB块指令链表中移除，同时调用api维护好instr的操作数的use链表。
   bool empty();
   // BB块中为空返回true
   int get_num_of_instr();
   // 返回BB块中指令的数目
-  std::list<Instruction *> get_instructions();
+  std::list<Instruction *> &get_instructions();
   //返回BB块的指令链表
   void erase_from_parent();
   // 将此BB块从所属函数的bb链表中移除
@@ -321,6 +321,7 @@ void delete_instr(Instruction *instr);
       int get_value() // 返回该常数类型中存的常数值
       static int get_value(ConstantInt *const_val)// 返回该常数类型const_val中存的常数值
       static ConstantInt *get(int val, Module *m) // 以val值来创建常数类
+      static ConstantInt *get(bool val, Module *m) // 以val值来创建bool常数类
       ```
     
   - ConstantFP:
@@ -385,9 +386,9 @@ void delete_instr(Instruction *instr);
   // 得到函数形参的list的终止迭代器
   void remove(BasicBlock* bb) 
   // 从函数的bb链表中删除一个bb
-  std::list<BasicBlock *> get_basic_blocks() 
+  std::list<BasicBlock *> &get_basic_blocks() 
   // 返回函数bb链表
-  std::list<Argument *> get_args() 
+  std::list<Argument *> &get_args() 
   // 返回函数的形参链表
   void set_instr_name();
   // 给函数中未命名的基本块和指令命名
@@ -455,7 +456,7 @@ void delete_instr(Instruction *instr);
   // 得到IR中的void类型其他类型可以用类似的API得到(推荐取得类型采用lab3助教提供的方法Type::get())
   void add_function(Function *f);
   // 将f挂在module的function链表上，在function被创建的时候会自动调用此方法来添加function
-void add_global_variable(GlobalVariable* g);
+  void add_global_variable(GlobalVariable* g);
   // 将g挂在module的GlobalVariable链表上，在GlobalVariable被创建的时候会自动调用此方法来添加GlobalVariable
   std::list<GlobalVariable *> get_global_variable();
   // 获取全局变量列表
@@ -612,3 +613,5 @@ void add_global_variable(GlobalVariable* g);
 ### 总结
 
 助教在接口文档里筛选了可能会需要用到的接口，如果对API有问题的请移步issue讨论，本次`lightir`接口由助教自行设计实现，并做了大量测试，如有对助教的实现方法有异议或者建议的也请移步issue讨论，**请不要直接修改助教的代码，若因修改助教代码造成后续实验仓库合并的冲突请自行解决**。
+
+**注**：由于`lab5`需要直接修改`ir`结构，为了方便同学们实现，助教将大部分私有变量(例如指令链表等)直接返回引用，请注意自己对私有变量的修改。

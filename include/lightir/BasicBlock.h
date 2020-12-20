@@ -56,7 +56,7 @@ public:
     bool empty() { return instr_list_.empty(); }
 
     int get_num_of_instr() { return instr_list_.size(); }
-    std::list<Instruction *> get_instructions() { return instr_list_; }
+    std::list<Instruction *> &get_instructions() { return instr_list_; }
     
     void erase_from_parent();
     

@@ -13,6 +13,10 @@ void ActiveVars::run()
         {
             func_ = func;  
 
+            func_->set_instr_name();
+            live_in.clear();
+            live_out.clear();
+            
             // 在此分析 func_ 的每个bb块的活跃变量，并存储在 live_in live_out 结构内
 
             output_active_vars << print();
@@ -23,11 +27,10 @@ void ActiveVars::run()
     output_active_vars.close();
     return ;
 }
-    
+
 std::string ActiveVars::print()
 {
     std::string active_vars;
-    func_->set_instr_name();
     active_vars +=  "{\n";
     active_vars +=  "\"function\": \"";
     active_vars +=  func_->get_name();
@@ -35,39 +38,41 @@ std::string ActiveVars::print()
 
     active_vars +=  "\"live_in\": {\n";
     for (auto &p : live_in) {
-        active_vars +=  "  \"";
-        active_vars +=  p.first->get_name();
-        active_vars +=  "\": [" ;
-        for (auto &v : p.second) {
-            active_vars +=  "\"%";
-            active_vars +=  v->get_name();
-            active_vars +=  "\",";
+        if (p.second.size() == 0) {
+            continue;
+        } else {
+            active_vars +=  "  \"";
+            active_vars +=  p.first->get_name();
+            active_vars +=  "\": [" ;
+            for (auto &v : p.second) {
+                active_vars +=  "\"%";
+                active_vars +=  v->get_name();
+                active_vars +=  "\",";
+            }
+            active_vars += "]" ;
+            active_vars += ",\n";   
         }
-        active_vars.pop_back();
-        active_vars += "]" ;
-        active_vars += ",\n";
     }
-    active_vars.pop_back();
-    active_vars.pop_back();
     active_vars += "\n";
     active_vars +=  "    },\n";
     
     active_vars +=  "\"live_out\": {\n";
     for (auto &p : live_out) {
-        active_vars +=  "  \"";
-        active_vars +=  p.first->get_name();
-        active_vars +=  "\": [" ;
-        for (auto &v : p.second) {
-            active_vars +=  "\"%";
-            active_vars +=  v->get_name();
-            active_vars +=  "\",";
+        if (p.second.size() == 0) {
+            continue;
+        } else {
+            active_vars +=  "  \"";
+            active_vars +=  p.first->get_name();
+            active_vars +=  "\": [" ;
+            for (auto &v : p.second) {
+                active_vars +=  "\"%";
+                active_vars +=  v->get_name();
+                active_vars +=  "\",";
+            }
+            active_vars += "]";
+            active_vars += ",\n";
         }
-        active_vars.pop_back();
-        active_vars += "]";
-        active_vars += ",\n";
     }
-    active_vars.pop_back();
-    active_vars.pop_back();
     active_vars += "\n";
     active_vars += "    }\n";
 
