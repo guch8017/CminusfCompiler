@@ -20,7 +20,7 @@ typedef enum CM_TYPE{
     CM_ERR = 0x8,
     CM_VOID = 0x10,
     CM_ARRAY = 0x20,
-    CM_CONST = 0x0,
+    CM_CONST = 0x40,
     CM_PARAM = 0x80
 } CM_TYPE;
 
@@ -448,6 +448,7 @@ void CminusfBuilder::visit(ASTVar &node) {
             }else{
                 sub_val = dynamic_cast<ConstantFP*>(subscrip)->get_value();
             }
+            subscrip = ConstantInt::get((int)sub_val, module.get());
             if(sub_val < 0){
                 LOG(WARNING) << "Negtive array index detected!";
                 builder->create_call(scope.find("neg_idx_except"), {});
