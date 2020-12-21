@@ -3,6 +3,10 @@
 - [Lab5 实验文档](#lab5-实验文档)
   - [0. 前言](#0-前言)
     - [主要工作](#主要工作)
+      - [代码与材料阅读](#代码与材料阅读)
+      - [开发基本优化Pass](#开发基本优化Pass)
+      - [Bonus：选做优化Pass](#bonus选做优化Pass)
+      - [Lab5代码与实验报告提交](#lab5代码与实验报告提交)
   - [1. 实验框架](#1-实验框架)
   - [2. 运行与调试](#2-运行与调试)
     - [运行 cminusfc](#运行-cminusfc)
@@ -21,7 +25,7 @@
 
 经过 Lab4，相信大家已经掌握了 LightIR 的结构，并且对于 LLVM IR 也有了更深的理解。在本次实验中，我们要在理解SSA（静态单赋值）格式的基础上，实现三个简单的块内优化Pass与分析Pass：常量传播，循环不变式外提，活跃变量分析。
 
-值得一提的是`lightir`中的[lightir.md](../common/lightir.md)中的User类中`operands_`成员也就是操作数列表，以及Value类的`use_list_`成员，这两个链表描述了指令间的数据依赖关系，请注意查看。
+值得一提的是`LightIR`中的[LightIR核心类介绍.md](../common/LightIR.md)中的User类中`operands_`成员也就是操作数列表，以及Value类的`use_list_`成员，这两个链表描述了指令间的数据依赖关系，请注意查看。
 
 ### 主要工作
 
@@ -40,7 +44,7 @@
     %a = 1 + 1；
     %b = %a + %c;
     ```
-    那么首先我们可以将`%a=1+1`折叠成`%a=2`，然后我们发现`%b=%a+%c`这条指令用到了`%a`，那么我们就可以将`%b=%a+%c`中的`%a`直接替换成常量1，代码转化为：
+    那么首先我们可以将`%a=1+1`折叠成`%a=2`，然后我们发现`%b=%a+%c`这条指令用到了`%a`，那么我们就可以将`%b=%a+%c`中的`%a`直接替换成常量2，代码转化为：
     ```cpp
     %a = 2;
     %b = 2 + %c;
@@ -59,7 +63,7 @@
     if(a){...}
     else{...}
     ```
-    同时对于分支嵌套的情况都能够删除掉无用的分支，这一步之后若出现冗余的块也需要进行合并，并删去相应的跳转指令。
+    同时对于分支嵌套的情况都能够删除掉无用的分支，这一步之后对于可能出现的无法到达的块都需要进行删除，而至于只含有跳转指令的冗余块在本次实验中不要求实现。
    
 2. **循环不变式外提**
     要能够实现将与循环无关的表达式提取到循环的外面。不用考虑数组，但需要考虑全局变量。举个例子：
@@ -90,6 +94,10 @@
 3. **活跃变量分析**
 
    能够实现分析bb块的入口和出口的活跃变量，参考资料见附件(紫书9.2.4节)，在`ActiveVars.hpp`中定义了两个成员`live_in`, `live_out`，你需要将`pair<bb, IN[bb]>`插入`live_in`的map 结构中，将`pair<bb, OUT[bb]>`插入`live_out` 的map 结构中，并调用ActiveVars类中的print()方法输出bb活跃变量情况到json文件，助教会根据你输出的json文件进行批改。(为了保证输出变量名字的一致性，请不要对指令，bb等进行命名操作，cminusfc_builder 推荐使用lab4的答案)
+   
+   **提示**：材料中没有phi节点的设计，因此数据流方程：$OUT[B] =\cup_{s是B的后继}IN[S]$ 的定义蕴含着S入口处活跃的变量在它所有前驱的出口处都是活跃的，由于`phi`指令的特殊性，例如`%0 = phi [%op1, %bb1], [%op2, %bb2]`如果使用如上数据流方程，则默认此`phi`指令同时产生了`op1`与`op2`的活跃性，而事实上只有控制流从`%bb1`传过来才有`%op1`的活跃性，从`%bb2`传过来才有`%op2`的活跃性。因此对此数据流方程需要做一些修改。
+   
+   
 
 
 #### Bonus：选做优化Pass
@@ -102,7 +110,7 @@
 #### Lab5代码与实验报告提交
 1. 基本优化Pass的代码都写在`src/optimization/`目录下面，头文件放入`include/optimization/`当中，最后只会在这两个目录下验收代码文件。
 2. 对于选做的优化Pass，需要发邮件给助教，统一线下验收。
-3. 需要在 `Reports/lab5/` 目录下撰写实验报告，且由队长说明成员贡献比率。其中，在 `report-phase1.md` 中完成代码阅读部分的报告，在 `report-phase2.md` 中解释你们的基本优化PASS的设计，遇到的困难和解决方案，由**队长**在 `contribution.md` 中解释每位队员的贡献，并说明贡献比例
+3. 需要在 `Reports/lab5/` 目录下撰写实验报告，且由队长说明成员贡献比率。其中，在 `report-phase1.md` 中完成代码阅读部分的报告，在 `report-phase2.md` 中解释你们的基本优化Pass的设计，遇到的困难和解决方案，由**队长**在 `contribution.md` 中解释每位队员的贡献，并说明贡献比例
 
 
 
@@ -139,27 +147,48 @@ make install
 ```
 ### 自动测试
 助教贴心地为大家准备了自动测试脚本，它在 `tests/lab5` 目录下，使用方法如下：
-* 有两个可用的选项：`--ConstPropagation`/`-C`，`--LoopInvHoist`/`-L`，分别表示用来评测常量传播Pass以及循环不变式外提Pass。
-* 评测脚本会对样例进行编译和执行，然后对生成的可执行文件首先检查结果的正确性，每个样例的正确结果会放在.out文件中，结果正确的情况下才会去进一步评测运行时间。
+* 有三个可用的选项：`--ConstPropagation`/`-C`，`--LoopInvHoist`/`-L`，`--ActiveVars/-A'`分别表示用来评测常量传播Pass以及循环不变式外提Pass，以及活跃变量分析Pass。
+
+* 脚本中会使用`taskset`将程序与CPU核心进行绑定，以此来提高时间测试的稳定性；当然如果虚拟机中没有该命令则通过下面的命令来安装：
+  ```bash
+  sudo apt install schedtool
+  ```
+  
+* 评测脚本会对样例进行编译和执行，然后对生成的可执行文件首先检查结果的正确性，每个样例的正确结果会放在.out文件中，结果正确的情况下才会去进一步评测运行时间。另外，在每类样例目录下中的`baseline`目录中还提供了相应testcase的`.ll`文件来作为baseline，基本Pass的优化效果得分也是要根据baseline的时间来进行计算。
+
 * 如果显示执行时间的表格中出现了`None`则表示该样例有错误。
+
 * 每个样例会运行三次取平均时间（时间单位是s）并且保留两位小数输出，当然每个样例的运行次数也可以自行更改脚本中`repeated_time`变量。
+
+* 活跃变量Pass测试将与答案json文件脚本对比，得分计算规则见下面评分标准
 ```sh
 # 在 tests/lab5 目录下运行：
-./lab5_test.py -C
+./lab5_test.py -L
 ```
 如果完全正确，它会输出：
 ```
-========== ConstPropagation ==========
+========== LoopInvHoist ==========
 Compiling  
-100%|██████████████| 1/1 [00:00<00:00, 11.22it/s]
+100%|███████████████| 8/8 [00:00<00:00, 12.16it/s]
 Evalution 
-100%|██████████████| 1/1 [00:01<00:00,  1.99s/it]
-Compiling  -const-propagation
-100%|██████████████| 1/1 [00:00<00:00, 12.83it/s]
+100%|███████████████| 8/8 [00:49<00:00,  6.14s/it]
+Compiling  -loop-inv-hoist
+100%|███████████████| 8/8 [00:00<00:00, 11.85it/s]
 Evalution 
-100%|██████████████| 1/1 [00:01<00:00,  1.59s/it]
-testcase         before optimization     after optimization
-testcase-1              0.48                    0.39
+100%|███████████████| 8/8 [00:10<00:00,  1.25s/it]
+Compiling baseline files
+100%|███████████████| 8/8 [00:00<00:00, 13.63it/s]
+Evalution 
+100%|███████████████| 8/8 [00:07<00:00,  1.09it/s]
+testcase         before optimization     after optimization      baseline
+testcase-1              0.63                    0.36              0.36
+testcase-2              0.46                    0.38              0.37
+testcase-3              0.62                    0.36              0.36
+testcase-4              0.40                    0.39              0.39
+testcase-5              4.96                    0.38              0.38
+testcase-6              1.03                    0.08              0.08
+testcase-7              2.11                    0.24              0.24
+testcase-8              1.98                    0.25              0.25
 ```
 如果要增加样例，直接在样例目录中添加文件即可，命名参考目录下的其他文件。
 
@@ -199,7 +228,7 @@ testcase-1              0.48                    0.39
 │   ├── ...
 │   └── lab5
 │       ├── report-phase1.md            <- lab5 所需提交的实验阅读部分报告，请详细说明你们的设计（需要上交）
-│       ├── report-phase2.md            <- lab5 所需提交的实验基本PASS实验报告，请详细说明你们的设计（需要上交）
+│       ├── report-phase2.md            <- lab5 所需提交的实验基本Pass实验报告，请详细说明你们的设计（需要上交）
 │       └── contribution.md             <- lab5 所需提交的队员贡献信息（需要上交）
 ├── src
 │   ├── ...
@@ -244,9 +273,55 @@ testcase-1              0.48                    0.39
     
       `./src/optimization/ActiveVars.cpp`，`./src/optimization/ConstPropagation.cpp`，`./src/optimization/LoopInvHoist.cpp` 文件和 `./Reports/lab5` 目录下报告，其中`report-phase1.md` 会在阶段一的ddl的时候进行验收；`report-phase2.md`以及实现代码会在阶段二的ddl的时候进行验收。
     
-    * 选做Pass在`2021/01/11`之前都可以联系助教验收，然后由助教统一安排线下验收，该部分由学生现场演示，不需要撰写实验报告。
-* 评分标准: 
-  * 待定
+    * **选做Pass**在`2021/01/11`之前都可以联系助教验收，然后由助教统一安排线下验收，该部分由学生现场演示，**不需要**撰写实验报告。
+* 评分标准: 最终评分按照[组队规则](http://222.195.68.197/staff/2020-fall-notice_board/-/issues/89)，实验完成分（总分 60 分）组成如下：
+  * 阶段一 代码阅读
+    
+    * report-phase1.md (5 分)
+  * 阶段二 优化Pass开发
+    * **基本Pass (55 分)**
+      * report-phase2.md (10 分)
+      
+      * 常量传播 (15 分)
+        ```
+        对于每一个testcase: 
+        (after_optimization-baseline)/(before_optimization-baseline) > 0.8 得满分
+        (after_optimization-baseline)/(before_optimization-baseline) > 0.5 得85%分数
+        (after_optimization-baseline)/(before_optimization-baseline) > 0.2 得60%分数
+        ```
+        **注**：`before_optimization`以lab4答案为基准，lab5代码不收取`cminusf_builder.cpp`
+        
+        若编译出错或者运行出错将不得分，此外评测时所用的`testcase`与发布的不完全一致，最终的评分会映射到15分的总分区间。
+        
+      * 循环不变式外提 (15 分)
+    评分参考常量传播。
+        
+      * 活跃变量 (15 分)
+      
+        活跃变量的一个bb的入口处活跃变量或者出口处活跃变量的非空集合算一个分析结果，每个分析结果同分，对于每个分析结果`result`评分采取以下公式，（正确分析结果列表是`answer`）
+        $$
+        score = \frac{(answer\cap result).size()-(result-answer\cap result).size()}{answer.size()}
+        $$
+        例如：
+      
+        ```json
+        "live_in":{
+            //...
+            "label8": ["%arg0","%arg1","%op5","%op6","%op8",]
+        	//...
+        }
+        // 算一个分析结果，如果正确答案是如下结果，
+        "live_in":{
+            //...
+            "label8": ["%arg0","%arg1","%op5","%op6","%op7",]
+        	//...
+        }
+        // 则相比较于答案，缺少了op7，多分析了op8则此条分析结果得分为(4-1)/5=0.6
+        ```
+      
+    * **选做Pass**
+      助教会综合大家的实现完成度和难度给分，这一部分的分数直接算到总评上面，最多能够有2分（是队伍里面的每个人都能有哦）。
+    
   * 禁止执行恶意代码，违者本次实验0分处理
 * 迟交规定
   * `Soft Deadline` :
