@@ -1,7 +1,3 @@
-; ModuleID = 'cminus'
-source_filename = "/home/haiqwa/2020fall-compiler_cminus/tests/lab5/./testcases/LoopInvHoist/testcase-7.cminus"
-
-@a = global i32 zeroinitializer
 declare i32 @input()
 
 declare void @output(i32)
@@ -12,133 +8,112 @@ declare void @neg_idx_except()
 
 define void @main() {
 label_entry:
-  store i32 2, i32* @a
-  %op57 = load i32, i32* @a
-  %op58 = load i32, i32* @a
-  %op59 = mul i32 %op57, %op58
-  %op60 = load i32, i32* @a
-  %op61 = mul i32 %op59, %op60
-  %op62 = load i32, i32* @a
-  %op63 = mul i32 %op61, %op62
-  %op64 = load i32, i32* @a
-  %op65 = mul i32 %op63, %op64
-  %op66 = load i32, i32* @a
-  %op67 = mul i32 %op65, %op66
-  %op68 = load i32, i32* @a
-  %op69 = mul i32 %op67, %op68
-  %op70 = load i32, i32* @a
-  %op71 = mul i32 %op69, %op70
-  %op72 = load i32, i32* @a
-  %op73 = mul i32 %op71, %op72
-  %op74 = load i32, i32* @a
-  %op75 = mul i32 %op73, %op74
-  %op76 = load i32, i32* @a
-  %op77 = sdiv i32 %op75, %op76
-  %op78 = load i32, i32* @a
-  %op79 = sdiv i32 %op77, %op78
-  %op80 = load i32, i32* @a
-  %op81 = sdiv i32 %op79, %op80
-  %op82 = load i32, i32* @a
-  %op83 = sdiv i32 %op81, %op82
-  %op84 = load i32, i32* @a
-  %op85 = sdiv i32 %op83, %op84
-  %op86 = load i32, i32* @a
-  %op87 = sdiv i32 %op85, %op86
-  %op88 = load i32, i32* @a
-  %op89 = sdiv i32 %op87, %op88
-  %op90 = load i32, i32* @a
-  %op91 = sdiv i32 %op89, %op90
-  %op92 = load i32, i32* @a
-  %op93 = sdiv i32 %op91, %op92
-  %op94 = load i32, i32* @a
-  %op95 = sdiv i32 %op93, %op94
-  br label %label7
-label7:                                                ; preds = %label_entry, %label21
-  %op101 = phi i32 [ %op108, %label21 ], [ undef, %label_entry ]
-  %op102 = phi i32 [ %op109, %label21 ], [ undef, %label_entry ]
-  %op103 = phi i32 [ %op110, %label21 ], [ undef, %label_entry ]
-  %op104 = phi i32 [ %op111, %label21 ], [ undef, %label_entry ]
-  %op105 = phi i32 [ %op112, %label21 ], [ undef, %label_entry ]
-  %op106 = phi i32 [ 0, %label_entry ], [ %op23, %label21 ]
-  %op107 = phi i32 [ %op113, %label21 ], [ undef, %label_entry ]
-  %op9 = icmp slt i32 %op106, 1000000
-  %op10 = zext i1 %op9 to i32
-  %op11 = icmp ne i32 %op10, 0
-  br i1 %op11, label %label12, label %label13
-label12:                                                ; preds = %label7
-  br label %label15
-label13:                                                ; preds = %label7
-  call void @output(i32 %op101)
+  %op60 = mul i32 2, 2
+  %op62 = mul i32 %op60, 2
+  %op64 = mul i32 %op62, 2
+  %op66 = mul i32 %op64, 2
+  %op68 = mul i32 %op66, 2
+  %op70 = mul i32 %op68, 2
+  %op72 = mul i32 %op70, 2
+  %op74 = mul i32 %op72, 2
+  %op76 = mul i32 %op74, 2
+  %op78 = sdiv i32 %op76, 2
+  %op80 = sdiv i32 %op78, 2
+  %op82 = sdiv i32 %op80, 2
+  %op84 = sdiv i32 %op82, 2
+  %op86 = sdiv i32 %op84, 2
+  %op88 = sdiv i32 %op86, 2
+  %op90 = sdiv i32 %op88, 2
+  %op92 = sdiv i32 %op90, 2
+  %op94 = sdiv i32 %op92, 2
+  %op96 = sdiv i32 %op94, 2
+  br label %label8
+label8:                                                ; preds = %label_entry, %label22
+  %op102 = phi i32 [ %op109, %label22 ], [ undef, %label_entry ]
+  %op103 = phi i32 [ %op110, %label22 ], [ undef, %label_entry ]
+  %op104 = phi i32 [ %op111, %label22 ], [ undef, %label_entry ]
+  %op105 = phi i32 [ %op112, %label22 ], [ undef, %label_entry ]
+  %op106 = phi i32 [ %op113, %label22 ], [ undef, %label_entry ]
+  %op107 = phi i32 [ 0, %label_entry ], [ %op24, %label22 ]
+  %op108 = phi i32 [ %op114, %label22 ], [ undef, %label_entry ]
+  %op10 = icmp slt i32 %op107, 1000000
+  %op11 = zext i1 %op10 to i32
+  %op12 = icmp ne i32 %op11, 0
+  br i1 %op12, label %label13, label %label14
+label13:                                                ; preds = %label8
+  br label %label16
+label14:                                                ; preds = %label8
+  call void @output(i32 %op102)
   ret void
-label15:                                                ; preds = %label12, %label30
-  %op108 = phi i32 [ %op101, %label12 ], [ %op114, %label30 ]
-  %op109 = phi i32 [ %op102, %label12 ], [ %op115, %label30 ]
-  %op110 = phi i32 [ %op103, %label12 ], [ %op116, %label30 ]
-  %op111 = phi i32 [ %op104, %label12 ], [ %op117, %label30 ]
-  %op112 = phi i32 [ %op105, %label12 ], [ %op118, %label30 ]
-  %op113 = phi i32 [ 0, %label12 ], [ %op32, %label30 ]
-  %op17 = icmp slt i32 %op113, 2
-  %op18 = zext i1 %op17 to i32
-  %op19 = icmp ne i32 %op18, 0
-  br i1 %op19, label %label20, label %label21
-label20:                                                ; preds = %label15
-  br label %label24
-label21:                                                ; preds = %label15
-  %op23 = add i32 %op106, 1
-  br label %label7
-label24:                                                ; preds = %label20, %label39
-  %op114 = phi i32 [ %op108, %label20 ], [ %op119, %label39 ]
-  %op115 = phi i32 [ %op109, %label20 ], [ %op120, %label39 ]
-  %op116 = phi i32 [ %op110, %label20 ], [ %op121, %label39 ]
-  %op117 = phi i32 [ %op111, %label20 ], [ %op122, %label39 ]
-  %op118 = phi i32 [ 0, %label20 ], [ %op41, %label39 ]
-  %op26 = icmp slt i32 %op118, 2
-  %op27 = zext i1 %op26 to i32
-  %op28 = icmp ne i32 %op27, 0
-  br i1 %op28, label %label29, label %label30
-label29:                                                ; preds = %label24
-  br label %label33
-label30:                                                ; preds = %label24
-  %op32 = add i32 %op113, 1
-  br label %label15
-label33:                                                ; preds = %label29, %label48
-  %op119 = phi i32 [ %op114, %label29 ], [ %op123, %label48 ]
-  %op120 = phi i32 [ %op115, %label29 ], [ %op124, %label48 ]
-  %op121 = phi i32 [ %op116, %label29 ], [ %op125, %label48 ]
-  %op122 = phi i32 [ 0, %label29 ], [ %op50, %label48 ]
-  %op35 = icmp slt i32 %op122, 2
-  %op36 = zext i1 %op35 to i32
-  %op37 = icmp ne i32 %op36, 0
-  br i1 %op37, label %label38, label %label39
-label38:                                                ; preds = %label33
-  br label %label42
-label39:                                                ; preds = %label33
-  %op41 = add i32 %op118, 1
-  br label %label24
-label42:                                                ; preds = %label38, %label98
-  %op123 = phi i32 [ %op119, %label38 ], [ %op126, %label98 ]
-  %op124 = phi i32 [ %op120, %label38 ], [ %op127, %label98 ]
-  %op125 = phi i32 [ 0, %label38 ], [ %op100, %label98 ]
-  %op44 = icmp slt i32 %op125, 2
-  %op45 = zext i1 %op44 to i32
-  %op46 = icmp ne i32 %op45, 0
-  br i1 %op46, label %label47, label %label48
-label47:                                                ; preds = %label42
-  br label %label51
-label48:                                                ; preds = %label42
-  %op50 = add i32 %op122, 1
-  br label %label33
-label51:                                                ; preds = %label47, %label56
-  %op126 = phi i32 [ %op123, %label47 ], [ %op95, %label56 ]
-  %op127 = phi i32 [ 0, %label47 ], [ %op97, %label56 ]
-  %op53 = icmp slt i32 %op127, 2
-  %op54 = zext i1 %op53 to i32
-  %op55 = icmp ne i32 %op54, 0
-  br i1 %op55, label %label56, label %label98
-label56:                                                ; preds = %label51
-  %op97 = add i32 %op127, 1
-  br label %label51
-label98:                                                ; preds = %label51
-  %op100 = add i32 %op125, 1
-  br label %label42
+label16:                                                ; preds = %label13, %label31
+  %op109 = phi i32 [ %op102, %label13 ], [ %op115, %label31 ]
+  %op110 = phi i32 [ %op103, %label13 ], [ %op116, %label31 ]
+  %op111 = phi i32 [ %op104, %label13 ], [ %op117, %label31 ]
+  %op112 = phi i32 [ %op105, %label13 ], [ %op118, %label31 ]
+  %op113 = phi i32 [ %op106, %label13 ], [ %op119, %label31 ]
+  %op114 = phi i32 [ 0, %label13 ], [ %op33, %label31 ]
+  %op18 = icmp slt i32 %op114, 2
+  %op19 = zext i1 %op18 to i32
+  %op20 = icmp ne i32 %op19, 0
+  br i1 %op20, label %label21, label %label22
+label21:                                                ; preds = %label16
+  br label %label25
+label22:                                                ; preds = %label16
+  %op24 = add i32 %op107, 1
+  br label %label8
+label25:                                                ; preds = %label21, %label40
+  %op115 = phi i32 [ %op109, %label21 ], [ %op120, %label40 ]
+  %op116 = phi i32 [ %op110, %label21 ], [ %op121, %label40 ]
+  %op117 = phi i32 [ %op111, %label21 ], [ %op122, %label40 ]
+  %op118 = phi i32 [ %op112, %label21 ], [ %op123, %label40 ]
+  %op119 = phi i32 [ 0, %label21 ], [ %op42, %label40 ]
+  %op27 = icmp slt i32 %op119, 2
+  %op28 = zext i1 %op27 to i32
+  %op29 = icmp ne i32 %op28, 0
+  br i1 %op29, label %label30, label %label31
+label30:                                                ; preds = %label25
+  br label %label34
+label31:                                                ; preds = %label25
+  %op33 = add i32 %op114, 1
+  br label %label16
+label34:                                                ; preds = %label30, %label49
+  %op120 = phi i32 [ %op115, %label30 ], [ %op124, %label49 ]
+  %op121 = phi i32 [ %op116, %label30 ], [ %op125, %label49 ]
+  %op122 = phi i32 [ %op117, %label30 ], [ %op126, %label49 ]
+  %op123 = phi i32 [ 0, %label30 ], [ %op51, %label49 ]
+  %op36 = icmp slt i32 %op123, 2
+  %op37 = zext i1 %op36 to i32
+  %op38 = icmp ne i32 %op37, 0
+  br i1 %op38, label %label39, label %label40
+label39:                                                ; preds = %label34
+  br label %label43
+label40:                                                ; preds = %label34
+  %op42 = add i32 %op119, 1
+  br label %label25
+label43:                                                ; preds = %label39, %label99
+  %op124 = phi i32 [ %op120, %label39 ], [ %op127, %label99 ]
+  %op125 = phi i32 [ %op121, %label39 ], [ %op128, %label99 ]
+  %op126 = phi i32 [ 0, %label39 ], [ %op101, %label99 ]
+  %op45 = icmp slt i32 %op126, 2
+  %op46 = zext i1 %op45 to i32
+  %op47 = icmp ne i32 %op46, 0
+  br i1 %op47, label %label48, label %label49
+label48:                                                ; preds = %label43
+  br label %label52
+label49:                                                ; preds = %label43
+  %op51 = add i32 %op123, 1
+  br label %label34
+label52:                                                ; preds = %label48, %label57
+  %op127 = phi i32 [ %op124, %label48 ], [ %op96, %label57 ]
+  %op128 = phi i32 [ 0, %label48 ], [ %op98, %label57 ]
+  %op54 = icmp slt i32 %op128, 2
+  %op55 = zext i1 %op54 to i32
+  %op56 = icmp ne i32 %op55, 0
+  br i1 %op56, label %label57, label %label99
+label57:                                                ; preds = %label52
+  %op98 = add i32 %op128, 1
+  br label %label52
+label99:                                                ; preds = %label52
+  %op101 = add i32 %op126, 1
+  br label %label43
 }

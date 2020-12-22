@@ -1,4 +1,3 @@
-int a;
 void main(void){
     int i;
     int j;
@@ -6,6 +5,7 @@ void main(void){
     int o;
     int p;
     int q;
+    int a;
     int ret;
 
     a = 2;
