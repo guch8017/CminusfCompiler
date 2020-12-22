@@ -1,7 +1,7 @@
 /*
  * 声明：本代码为 2020 秋 中国科大编译原理（李诚）课程实验参考实现。
  * 请不要以任何方式，将本代码上传到可以公开访问的站点或仓库
- */
+*/
 
 #include "cminusf_builder.hpp"
 
@@ -179,11 +179,12 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
     }
     node.compound_stmt->accept(*this);
     if (builder->get_insert_block()->get_terminator() == nullptr){
-        if (cur_fun->get_return_type() == VOID_T) {
+        if (cur_fun->get_return_type()->is_void_type())
             builder->create_void_ret();
-        } else if (builder->get_insert_block()->empty()) {
-            builder->get_insert_block()->erase_from_parent();
-        }
+        else if (cur_fun->get_return_type()->is_float_type())
+            builder->create_ret(CONST_FP(0.));
+        else
+            builder->create_ret(CONST_INT(0));
     }
     scope.exit();
 }
@@ -327,9 +328,9 @@ void CminusfBuilder::visit(ASTVar &node) {
         builder->set_insert_point(exceptBB);
         auto neg_idx_except_fun = scope.find("neg_idx_except");
         builder->create_call( static_cast<Function *>(neg_idx_except_fun), {});
-        if (cur_fun->get_function_type()->get_return_type()->is_void_type())
+        if (cur_fun->get_return_type()->is_void_type())
             builder->create_void_ret();
-        else if (cur_fun->get_function_type()->get_return_type()->is_float_type())
+        else if (cur_fun->get_return_type()->is_float_type())
             builder->create_ret(CONST_FP(0.));
         else
             builder->create_ret(CONST_INT(0));

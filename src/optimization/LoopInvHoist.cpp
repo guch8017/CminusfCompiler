@@ -12,6 +12,12 @@ void LoopInvHoist::run()
     // 先通过LoopSearch获取循环的相关信息
     LoopSearch loop_searcher(m_, false);
     loop_searcher.run();
+    for(auto set: loop_searcher){
+        for(auto set2: *set){
+            std::cout << set2->get_name() << ", ";
+        }
+        std::cout << std::endl;
+    }
     // 对所有循环进行处理
     for(Function* func: m_->get_functions()){
         for(auto bbsets: loop_searcher.get_loops_in_func(func)){
@@ -25,8 +31,7 @@ void LoopInvHoist::run()
                 std::unordered_set<Value*> exists;
                 for(BasicBlock* bb: *bbsets){
                     for(Instruction* ins: bb->get_instructions()){
-                        // 函数调用返回值、load指令(此处只涉及到全局变量及数组取值，其余均已被SSA化)不存入集合，因为它们的返回值可能受其他过程影响
-                        if(ins->is_phi() || ins->is_store() || ins->is_load() ||  ins->is_br() || ins->is_call()) continue;
+                        
                         exists.insert(ins);
                     }
                 }
@@ -62,11 +67,12 @@ void LoopInvHoist::run()
                     BasicBlock* target = *loop_searcher.get_loop_base(bbsets)->get_pre_basic_blocks().begin();
                     if(target == nullptr) continue;
                     Instruction*  termIns = target->get_terminator();
-                    target->delete_instr_only(termIns);
+                    target->get_instructions().remove(termIns);
+                    //target->delete_instr_only(termIns);
                     ins->set_parent(target);
                     target->add_instruction(ins);
                     target->add_instruction(termIns);
-                    bb->delete_instr_only(ins);
+                    bb->get_instructions().remove(ins);
                 }
             }
             
