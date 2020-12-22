@@ -55,17 +55,17 @@ ConstantFP *compute_f_binary(
     float c_value2 = dynamic_cast<ConstantFP*>(value2)->get_value();
     switch (op)
     {
-    case Instruction::add:
+    case Instruction::fadd:
         return ConstantFP::get(c_value1 + c_value2, module_);
 
         break;
-    case Instruction::sub:
+    case Instruction::fsub:
         return ConstantFP::get(c_value1 - c_value2, module_);
         break;
-    case Instruction::mul:
+    case Instruction::fmul:
         return ConstantFP::get(c_value1 * c_value2, module_);
         break;
-    case Instruction::sdiv:
+    case Instruction::fdiv:
         return ConstantFP::get(c_value1 / c_value2, module_);
         break;
     default:
@@ -193,12 +193,12 @@ void ConstPropagation::run()
                     }
                 }else if(instr->is_si2fp()){
                     if(IS_CONST_INT(instr->get_operand(0))){
-                        instr->replace_all_use_with(ConstantFP::get(dynamic_cast<ConstantInt*>(instr)->get_value(), m_));
+                        instr->replace_all_use_with(ConstantFP::get(dynamic_cast<ConstantInt*>(instr->get_operand(0))->get_value(), m_));
                         instrToBeDelete.insert(instr);
                     }
                 }else if(instr->is_fp2si()){
                     if(IS_CONST_FP(instr->get_operand(0))){
-                        instr->replace_all_use_with(ConstantInt::get((int)dynamic_cast<ConstantFP*>(instr)->get_value(), m_));
+                        instr->replace_all_use_with(ConstantInt::get((int)dynamic_cast<ConstantFP*>(instr->get_operand(0))->get_value(), m_));
                         instrToBeDelete.insert(instr);
                     }
                 }else if(instr->is_br()){
