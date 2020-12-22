@@ -1,3 +1,6 @@
+; ModuleID = 'cminus'
+source_filename = "/home/haiqwa/2020fall-compiler_cminus/tests/lab5/./testcases/ConstPropagation/testcase-4.cminus"
+
 @a = global i32 zeroinitializer
 declare i32 @input()
 
