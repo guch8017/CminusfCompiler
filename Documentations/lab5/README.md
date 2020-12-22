@@ -285,9 +285,9 @@ testcase-8              1.98                    0.25              0.25
       * 常量传播 (15 分)
         ```
         对于每一个testcase: 
-        (after_optimization-baseline)/(before_optimization-baseline) > 0.8 得满分
-        (after_optimization-baseline)/(before_optimization-baseline) > 0.5 得85%分数
-        (after_optimization-baseline)/(before_optimization-baseline) > 0.2 得60%分数
+        (before_optimization-after_optimization)/(before_optimization-baseline) > 0.8 得满分
+        (before_optimization-after_optimization)/(before_optimization-baseline) > 0.5 得85%分数
+        (before_optimization-after_optimization)/(before_optimization-baseline) > 0.2 得60%分数
         ```
         **注**：`before_optimization`以lab4答案为基准，lab5代码不收取`cminusf_builder.cpp`
         
