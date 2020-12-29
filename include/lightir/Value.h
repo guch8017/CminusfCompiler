@@ -41,7 +41,7 @@ public:
     void remove_use(Value *val);
 
     virtual std::string print() = 0;
-private:
+protected:
     Type *type_;
     std::list<Use> use_list_;   // who use this value
     std::string name_;    // should we put name field here ?

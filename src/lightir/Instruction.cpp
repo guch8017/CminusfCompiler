@@ -655,3 +655,7 @@ std::string PhiInst::print()
     }
     return instr_ir; 
 }
+
+BranchInst::BranchInst(int op_num, BasicBlock *bb): Instruction(Type::get_void_type(bb->get_module()), Instruction::br, op_num, bb){};
+ReturnInst::ReturnInst(BasicBlock *bb, size_t num_op): Instruction(Type::get_void_type(bb->get_module()), Instruction::ret, num_op, bb){};
+StoreInst::StoreInst(BasicBlock *bb): Instruction(Type::get_void_type(bb->get_module()), Instruction::store, 2, bb){};

@@ -75,13 +75,15 @@ public:
 
     inline const Function *get_parent() const { return parent_; }
     inline       Function *get_parent()       { return parent_; }
-
+    Argument* deepcopy(){
+        return new Argument(type_, name_, parent_, arg_no_);
+    }
     /// For example in "void foo(int a, float b)" a is 0 and b is 1.
     unsigned get_arg_no() const {
         assert(parent_ && "can't get number of unparented arg");
         return arg_no_;
     }
-
+    
     virtual std::string print() override ;
 private:
     Function *parent_;

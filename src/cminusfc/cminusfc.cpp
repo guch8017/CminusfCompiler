@@ -7,6 +7,7 @@
 #include "LoopInvHoist.hpp"
 #include "ActiveVars.hpp"
 #include "ConstPropagation.hpp"
+#include "Inline.hpp"
 #include <iostream>
 #include <fstream>
 #include <memory>
@@ -28,6 +29,7 @@ int main(int argc, char **argv) {
     bool activevars = false;
     bool loop_inv_hoist = false;
     bool loop_search = false;
+    bool inline_opt = false;
 
     for (int i = 1;i < argc;++i) {
         if (argv[i] == "-h"s || argv[i] == "--help"s) {
@@ -55,6 +57,8 @@ int main(int argc, char **argv) {
             const_propagation = true;
         } else if (argv[i] == "-active-vars"s) {
             activevars = true;
+        } else if (argv[i] == "-inline"s){
+            inline_opt = true;
         } else {
             if (input_path.empty()) {
                 input_path = argv[i];
@@ -118,6 +122,11 @@ int main(int argc, char **argv) {
     {
         PM.add_pass<LoopInvHoist>(true);
     }
+    if( inline_opt )
+    {
+        PM.add_pass<Inline>(true);
+    }
+
     PM.run();
     
     auto IR = m->print();

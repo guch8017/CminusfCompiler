@@ -25,7 +25,7 @@ public:
     void remove_use_of_ops();
     void remove_operands(int index1,int index2);
 
-private:
+protected:
     // std::unique_ptr< std::list<Value *> > operands_;   // operands of this value
     std::vector<Value *> operands_;   // operands of this value
     unsigned num_ops_;
