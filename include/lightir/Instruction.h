@@ -55,7 +55,7 @@ public:
     Function *get_function();
     Module *get_module();
 
-    /// ============= INLINE OPTIMIZATIO HELPER FUNCTIONS ==============
+    /// ============= INLINE OPTIMIZATION HELPER FUNCTIONS ==============
 
     // 创建一个指令的深拷贝
     virtual Instruction* deepcopy(BasicBlock* parent) = 0;
@@ -85,7 +85,7 @@ public:
         
     };
 
-    /// ============= INLINE OPTIMIZATIO HELPER FUNCTIONS ==============
+    /// ============= INLINE OPTIMIZATION HELPER FUNCTIONS ==============
 
 
     OpID get_instr_type() { return op_id_; }

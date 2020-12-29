@@ -21,6 +21,8 @@ private:
     /**
      * 拆分基本块
      * 
+     * @note inst必须为targetBB内的指令，否则将返回 ::nullptr
+     * 
      * @param targetBB 待拆分的基本块
      * @param inst 以该指令为分界进行拆分
      * 
@@ -32,6 +34,11 @@ private:
      * 
      * @param func 待处理的函数
      * @param target 被插入函数
+     * @param entry 调用者所在的基本块拆分后的入口块
+     * @param exit_ 调用者所在的基本块拆分后的出口块
+     * @param caller 调用该函数的指令
+     * 
+     * @note 执行本指令后函数结构将变为 entry -> | inlineBasicBlocks | -> exit_
      * 
      * @return 内联化函数入口点
      */

@@ -54,12 +54,10 @@ BasicBlock* Inline::splitBasicBlock(BasicBlock* targetBB, CallInst* inst){
 BasicBlock* Inline::transplant(Function* func, Function* target, BasicBlock* entry, BasicBlock* exit_, CallInst* caller){
     std::map<Value*, Value*> pointerMap;
     // 建立新旧基本块映射
-    printf("Step 1\n");
     for(BasicBlock* _oriBB: func->get_basic_blocks()){
         pointerMap[_oriBB] = BasicBlock::create(target->get_parent(), getName(), target);
     }
     // 建立新旧指令映射，先不考虑引用关系
-    printf("Step 2\n");
     for(BasicBlock* _oriBB: func->get_basic_blocks()){
         BasicBlock* _newBB = dynamic_cast<BasicBlock*>(pointerMap[_oriBB]);
         for(Instruction* inst: _oriBB->get_instructions()){
@@ -67,7 +65,6 @@ BasicBlock* Inline::transplant(Function* func, Function* target, BasicBlock* ent
         }
     }
     // 修复引用
-    printf("Step 3\n");
     for(BasicBlock* _oriBB: func->get_basic_blocks()){
         BasicBlock* _newBB = dynamic_cast<BasicBlock*>(pointerMap[_oriBB]);
         for(Instruction* inst: _newBB->get_instructions()){
@@ -76,7 +73,6 @@ BasicBlock* Inline::transplant(Function* func, Function* target, BasicBlock* ent
         }
     }
     // 若函数有返回值则创建Phi指令，否则执行空跳转
-    printf("Step 4\n");
     if(func->get_return_type()->is_void_type()){
         for(BasicBlock* _oriBB: func->get_basic_blocks()){
             BasicBlock* _newBB = dynamic_cast<BasicBlock*>(pointerMap[_oriBB]);
@@ -106,7 +102,6 @@ BasicBlock* Inline::transplant(Function* func, Function* target, BasicBlock* ent
     }
 
     // 替换入参
-    printf("Step 5\n");
     auto callParamList = caller->get_operands();
     auto pit = callParamList.begin();
     pit++; // 跳过function pointer
