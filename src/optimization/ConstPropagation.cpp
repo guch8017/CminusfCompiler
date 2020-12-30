@@ -155,6 +155,7 @@ void ConstPropagation::run()
             bbQueue.pop();
             if(bb->empty()) continue;
             std::set<Instruction*> instrToBeDelete;
+            std::unordered_map<Value*, std::vector<Value*>> pointerConst;
             for(Instruction* instr: bb->get_instructions()){
                 if(IS_BINARY(instr)){
                     // 整数/浮点数四则运算
@@ -201,7 +202,20 @@ void ConstPropagation::run()
                         instr->replace_all_use_with(ConstantInt::get((int)dynamic_cast<ConstantFP*>(instr->get_operand(0))->get_value(), m_));
                         instrToBeDelete.insert(instr);
                     }
-                }else if(instr->is_br()){
+                }else if(instr->is_store()){
+                    pointerConst[instr->get_operand(1)].push_back(instr->get_operand(0));
+                }else if(instr->is_load()){
+                    // 若存在，则说明值为刚刚存进去的，直接替换指令
+                    if(CONTAIN(pointerConst, instr->get_operand(0))){
+                        instr->replace_all_use_with(pointerConst[instr->get_operand(0)].back());
+                    }
+                    // 否则，将值存入栈，待后序使用
+                    else{
+                        pointerConst[instr->get_operand(0)].push_back(instr);
+                    }
+                }
+                
+                else if(instr->is_br()){
                     // 跳转指令，附带消除常量跳转
                     BranchInst* brInstr =  dynamic_cast<BranchInst*>(instr);
                     if(brInstr->is_cond_br()){
