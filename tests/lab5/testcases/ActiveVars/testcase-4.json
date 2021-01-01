@@ -52,15 +52,37 @@
 ,{
 "function": "main",
 "live_in": {
-  "label42": ["%op56",],
-  "label47": ["%op57",],
-  "label52": ["%op57",],
+  "label27": ["%x",],
+  "label31": ["%x",],
+  "label35": ["%x",],
+  "label39": ["%x",],
+  "label42": ["%op56","%x",],
+  "label47": ["%op57","%x",],
+  "label52": ["%op57","%x",],
+  "label_entry": ["%x",],
+  "label3": ["%x",],
+  "label7": ["%x",],
+  "label11": ["%x",],
+  "label15": ["%x",],
+  "label19": ["%x",],
+  "label23": ["%x",],
 
     },
 "live_out": {
-  "label42": ["%op57",],
-  "label47": ["%op57",],
-  "label52": ["%op56",],
+  "label27": ["%x",],
+  "label31": ["%x",],
+  "label35": ["%x",],
+  "label39": ["%x",],
+  "label42": ["%op57","%x",],
+  "label47": ["%op57","%x",],
+  "label52": ["%op56","%x",],
+  "label_entry": ["%x",],
+  "label3": ["%x",],
+  "label7": ["%x",],
+  "label11": ["%x",],
+  "label15": ["%x",],
+  "label19": ["%x",],
+  "label23": ["%x",],
 
     }
 }
