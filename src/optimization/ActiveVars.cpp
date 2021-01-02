@@ -164,13 +164,48 @@ void ActiveVars::run()
                         }
                     }
                     else if(ins->is_gep()){
-                        //数组类型，可能和load，store相关？
+                        // 数组类型，可能和load，store相关？
+                        // 右值参数数量不定，但是处理方法类似算术运算，左值为指令本身
+                        GetElementPtrInst* gepInstr =  dynamic_cast<GetElementPtrInst*>(ins);
+                        for(int i = 0; i < gepInstr->get_num_operand(); i++){
+                            Value* ope = gepInstr->get_operand(i);
+                            if(!CONTAIN(def_var,ope) && !IS_CONST_INT(ope) && !IS_CONST_FP(ope)){
+                                use_var.insert(ope);
+                            }
+                        }
+                        if(!CONTAIN(use_var,ins)){
+                            def_var.insert(ins);
+                        }
+                    }
+                    else if(ins->is_alloca()){
+                        // alloca类型，一般只有在给数组赋值时可能才会出现
+                        // 指令没有右值，即无操作数；指令本身为左值
+                        if(!CONTAIN(use_var,ins)){
+                            def_var.insert(ins);
+                        }
                     }
                     else if(ins->is_load()){
-
+                        // load类型，一般与全局变量/数组联系
+                        // 指令只有一个操作数
+                        Value* ptr = ins->get_operand(0);
+                        if(!CONTAIN(def_var,ptr) && !IS_CONST_INT(ptr) && !IS_CONST_FP(ptr)){
+                            use_var.insert(ptr);
+                        }
+                        if(!CONTAIN(use_var,ins)){
+                            def_var.insert(ins);
+                        }
                     }
                     else if(ins->is_store()){
-
+                        // store指令，似乎不会出现这个指令。两个操作数，第一个是val，第二个是ptr
+                        // 该指令本身不会作为操作数被引用
+                        Value* val = ins->get_operand(0);
+                        Value* ptr = ins->get_operand(1);
+                        if(!CONTAIN(def_var,val) && !IS_CONST_INT(val) && !IS_CONST_FP(val)){
+                            use_var.insert(val);
+                        }
+                        if(!CONTAIN(def_var,ptr) && !IS_CONST_INT(ptr) && !IS_CONST_FP(ptr)){
+                            use_var.insert(ptr);
+                        }
                     }
                 }
                 bb2ActiveUseVar[bb].insert(use_var.begin(), use_var.end());
