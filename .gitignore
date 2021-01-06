@@ -3,9 +3,9 @@ build
 .vscode
 lex.yy.c
 .DS_Store
-
+cmake-build-debug/
 *.diff
 */.DS_Store
-
+.idea
 tests/lab2/syntree_easy_generate/
 tests/lab2/syntree_normal_generate/

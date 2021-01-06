@@ -208,6 +208,7 @@ void ConstPropagation::run()
                     // 若存在，则说明值为刚刚存进去的，直接替换指令
                     if(CONTAIN(pointerConst, instr->get_operand(0))){
                         instr->replace_all_use_with(pointerConst[instr->get_operand(0)].back());
+                        instrToBeDelete.insert(instr);
                     }
                     // 否则，将值存入栈，待后序使用
                     else{
@@ -276,7 +277,7 @@ void ConstPropagation::run()
         // 完全没有到达该代码块的路径，删掉
         std::set<BasicBlock*> tbdBB;
         for(BasicBlock* bb: func->get_basic_blocks()){
-            if(!CONTAIN(visitedBB, bb)){
+            if(!CONTAIN(visitedBB, bb) && !CONTAIN(tbdBB, bb)){
                 tbdBB.insert(bb);
             }
         }
@@ -284,9 +285,12 @@ void ConstPropagation::run()
             // 删除Phi指令中的对应项，修复Phi指令的正确性
             // 此处需要更新Phi函数引用的路径。对于被删除的路径后的所有Path均需要更新arg no，否则会导致使用者链异常
             // TODO：入口为空时的处理？单个Phi指令替换成常量？
+            try{
+            /*
             for(auto instr: bb->get_instructions()){
                 bb->delete_instr(instr);
             }
+            */
             auto l = bb->get_use_list();
             for(Use use: l){
                 use.val_->remove_use(bb);
@@ -310,8 +314,12 @@ void ConstPropagation::run()
                 }
             }
             func->remove(bb);
+            }
+            catch(...){
+
+            }
         }
-        
+        /*
         // 只有一条无条件跳转指令的代码块，合并
         bool changed = true;
         while (changed)
@@ -345,6 +353,6 @@ void ConstPropagation::run()
                 func->get_basic_blocks().push_front(newEntry);
             }
         }
-        
+        */
     }
 }
