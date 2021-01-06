@@ -1,6 +1,8 @@
 # Lab5 实验报告
 
 小组成员 姓名 学号
+1. 顾超 PB18030825
+2. 王正阳 PB18030836
 
 ## 实验要求
 
@@ -10,7 +12,11 @@
 
 ## 实验难点
 
-实验中遇到哪些挑战
+* 常量传播
+  * 对全局变量的处理
+
+* 循环不变式外提
+  * 对循环不变式的识别
 
 + 活跃变量
   + phi指令的特殊处理：修改数据流方程
@@ -20,15 +26,325 @@
 
 * 常量传播
     实现思路：
+      * 普通的四则运算：识别两操作数，若均为常量类型则将指令替换为两者的计算结果。此处不考虑除数为0的情况。注意区分整型与浮点型。
+      * 字拓展指令：若为右值为常量则左值替换为常量，注意bool型变量需转换为整型传入ConstantInt::get中，否则将产生i1型常量。
+      * 浮点/整型转换指令：思路同字拓展指令。
+      * 比较指令：若所有右值均为常量则进行计算，结果存入i1型常量中替换指令。
+      * 条件跳转指令：若条件取值为定值，则根据该值执行无条件跳转。
+      * store/load指令：采用了TA的SSA化实现中处理全局变量的思路，利用Map+Stack存储指针对应变量的最新值，重复的load指令可被优化掉。若先store后load也可被优化处理。
     相应代码：
+      * 四则运算/整型、浮点比较（以整型四则运算为例）
+      ```c++
+      if(IS_BINARY(instr)){
+          // 整数/浮点数四则运算
+          BinaryInst* inst = dynamic_cast<BinaryInst*>(instr);
+          Instruction::OpID op = instr->get_instr_type();
+          Value* lhs = inst->get_operand(0);
+          Value* rhs = inst->get_operand(1);
+          // 若两者均为常量，说明可以执行替换操作
+          if(IS_CONST_INT(lhs) && IS_CONST_INT(rhs)){
+              // 提前计算对应的值，并用该常量替换所有引用到该指令结果的位置
+              inst->replace_all_use_with(compute_binary(op, lhs, rhs, m_));
+              // 删除该指令
+              instrToBeDelete.insert(inst);
+          }
+      }
+      ```
+      * 字拓展/浮点整型转换（以字拓展为例）
+      ```c++
+      if(instr->is_zext()){
+        // Zext扩展指令
+        //  操作数为常量，执行优化
+        if(IS_CONST_INT(instr->get_operand(0))){
+            // 直接替换为常量的值，然后删除该指令
+            instr->replace_all_use_with(ConstantInt::get(dynamic_cast<ConstantInt*>(instr->get_operand(0))->get_value(), m_));
+            instrToBeDelete.insert(instr);
+        }
+      }
+      ```
+      * store指令
+      ```c++
+      // 以下为变量定义，实际位于循环入口处
+      std::unordered_map<Value*, std::vector<Value*>> pointerConst;
+      // 由于map的特性，若不存在该项则会自动初始化一个空的vector，故不用判断指针对应的元素是否已经存在。
+      // 无论map中原本有无该指针对应的值，store操作后栈顶的元素对应的值必然是刚刚存入的值，符合函数执行预期，用于后序load指令的处理
+      pointerConst[instr->get_operand(1)].push_back(instr->get_operand(0));
+      ```
+      * load指令
+      ```c++
+      // 若map中存在对应指针的值，说明我们已经拥有指针指向的地址的最新的值，故直接将load指令替换为该值即可
+      if(CONTAIN(pointerConst, instr->get_operand(0))){
+          instr->replace_all_use_with(pointerConst[instr->get_operand(0)].back());
+      }
+      // 若不包含，则正常执行该load指令，若以后再次尝试读取该地址则可以省去一次load操作
+      else{
+          pointerConst[instr->get_operand(0)].push_back(instr);
+      }
+      ```
+      * 条件跳转语句
+      ```c++
+      if(brInstr->is_cond_br()){
+        // 处理条件跳转指令
+        Value* cond = brInstr->get_operand(0);
+        BasicBlock* trueBB = dynamic_cast<BasicBlock*>(brInstr->get_operand(1));
+        BasicBlock* falseBB = dynamic_cast<BasicBlock*>(brInstr->get_operand(2));
+        // 若条件是常量
+        if(IS_CONST_INT(cond) || IS_CONST_FP(cond)){
+            bool _tar;
+            if(IS_CONST_INT(cond)){
+                _tar  = dynamic_cast<ConstantInt*>(cond)->get_value() != 0;
+            }else{
+                _tar  = dynamic_cast<ConstantFP*>(cond)->get_value() != 0;
+            }
+            // 判断条件满足何种要求
+            if(_tar){
+                // 恒成立跳转
+                brInstr->replace_all_use_with(BranchInst::create_br(trueBB,  bb));
+                if(!CONTAIN(visitedBB, trueBB)){
+                    visitedBB.insert(trueBB);
+                    bbQueue.push(trueBB);
+                }
+            }else{
+                // 恒不成立跳转
+                brInstr->replace_all_use_with(BranchInst::create_br(falseBB,  bb));
+                if(!CONTAIN(visitedBB, falseBB)){
+                    visitedBB.insert(falseBB);
+                    bbQueue.push(falseBB);
+                }
+            }
+            instrToBeDelete.insert(instr);
+        }
+    }
+    ```
     优化前后的IR对比（举一个例子）并辅以简单说明：
-    
-
+    cminusf语言原文
+    ```c++
+    void main(void){
+      int a;
+      int b;
+      int c;
+      float aa;
+      float bb;
+      float cc;
+      a = 1;
+      b = 2;
+      aa = 1.0;
+      bb = 2.0;
+      /* Binary Demo  */
+      c = a + b;
+      cc = aa + bb;
+      /* Branch Demo */
+      if(a){
+        b = 2;
+      }
+      else{
+        b = 3;
+      }
+      /* Zext Demo */
+      c = a == a;
+      /* Fp2Si/Si2Fp Demo */
+      aa = a;
+      a = bb;
+      /* Global Demo */
+      gb = 1;
+      gb = 2;
+      output(gb);
+    }
+    ```
+    优化前
+    ```llvm
+    define void @main() {
+    label_entry:
+      %op8 = add i32 1, 2
+      %op11 = fadd float 0x3ff0000000000000, 0x4000000000000000
+      %op13 = icmp ne i32 1, 0
+      br i1 %op13, label %label14, label %label15
+    label14:                                                ; preds = %label_entry
+      br label %label16
+    label15:                                                ; preds = %label_entry
+      br label %label16
+    label16:                                                ; preds = %label14, %label15
+      %op26 = phi i32 [ 2, %label14 ], [ 3, %label15 ]
+      %op19 = icmp eq i32 1, 1
+      %op20 = zext i1 %op19 to i32
+      %op22 = sitofp i32 1 to float
+      %op24 = fptosi float 0x4000000000000000 to i32
+      store i32 1, i32* @gb
+      store i32 2, i32* @gb
+      %op25 = load i32, i32* @gb
+      call void @output(i32 %op25)
+      ret void
+    }
+    ```
+    优化后
+    ```llvm
+    define void @main() {
+    label_entry:
+      br label %label14 ; 此处整型加法、浮点加法已被优化。比较与跳转被提前计算，不可达分支被删除
+    label14:                                                ; preds = %label_entry%label_entry
+      br label %label16
+    label16:                                                ; preds = %label14
+      %op26 = phi i32 [ 2, %label14 ]
+      store i32 1, i32* @gb
+      store i32 2, i32* @gb
+      call void @output(i32 2)  ; 此处对全局变量的读操作已被优化为已知值2
+      ret void
+    }
+    ```
 
 * 循环不变式外提
     实现思路：
+    1. 遍历通过TA提供的循环搜索Pass获取到的所有循环。
+    2. 对每个循环体内所有指令执行遍历，存储一个循环体内所有指令的左值构成集合。
+    3. 再次遍历循环体内的所有指令，跳过br、call、load、store、phi等可能会导致外部环境变化的代码。剩余指令中若右值全部不在第2步存储的集合中，则说明该指令是循环不变的，因为其右值在循环中全部未改变。将该指令外提到循环入口处。
+    4. 若2-3步中出现了指令外提，则转2，否则进入下一个循环遍历。因为外提的不变式可能导致新的不变式产生。
     相应代码：
+    ```c++
+    // 对所有循环进行处理
+    for(Function* func: m_->get_functions()){
+        for(auto bbsets: loop_searcher.get_loops_in_func(func)){
+            // 若发生了改变需要进行迭代
+            // 一次外提操作后可能带来新的不变量
+            bool has_change = true;
+            while (has_change)
+            {
+                has_change = false;
+                // 保存循环内所有左值到一个集合中，其余变量则为外部来的
+                std::unordered_set<Value*> exists;
+                for(BasicBlock* bb: *bbsets){
+                    for(Instruction* ins: bb->get_instructions()){
+                        
+                        exists.insert(ins);
+                    }
+                }
+                // 二次遍历，若发现不变式则外提至主入口处
+                std::set<std::pair<BasicBlock*, Instruction*>>  tbr;
+                for(BasicBlock* bb: *bbsets){
+                    for(Instruction* ins: bb->get_instructions()){
+                        // call/phi指令返回值无法确定，即使其未运用到循环体内变量也不外提，load/store返回值不能保证一致，跳过
+                        if(ins->is_phi() ||  ins->is_br() || ins->is_call() || ins->is_load() || ins->is_store()) continue;
+                        bool t = true;
+                        // 遍历所有操作数，若包含内部变量则跳过
+                        for(Value* val: ins->get_operands()){
+                            if(CONTAIN(exists, val)){
+                                t  =  false;
+                                break;
+                            }
+                        }
+                        // 全部操作数均来自循环外部，说明可以外提，添加到待删除列表
+                        if(t){
+                            tbr.insert({bb, ins});
+                            exists.erase(ins);
+                            // 发生了变化，准备再次执行此过程
+                            has_change = true;
+                        }
+                    }
+                }
+                // 替换位置
+                BasicBlock* bb;
+                Instruction* ins;
+                for(auto pair: tbr){
+                    std::tie(bb, ins) = pair;
+                    // 此处取第1个前驱块，也就是进入循环的入口，后序的前驱都是循环内部回来的
+                    BasicBlock* target = *loop_searcher.get_loop_base(bbsets)->get_pre_basic_blocks().begin();
+                    if(target == nullptr) continue;
+                    // 将外提的指令插入到入口块的终结指令（br）前
+                    Instruction*  termIns = target->get_terminator();
+                    target->get_instructions().remove(termIns);
+                    ins->set_parent(target);
+                    target->add_instruction(ins);
+                    target->add_instruction(termIns);
+                    bb->get_instructions().remove(ins);
+                }
+            }
+            
+        }
+    }
+    ```
     优化前后的IR对比（举一个例子）并辅以简单说明：
+    测试cminus文件
+    ```c++
+    void main(void){
+      int a;
+      int b;
+      int c;
+      int d;
+      a = input();
+      b = input();
+      while(a){
+        c = a + b;
+        d = input();
+        while(d){
+          a = input();
+          c = b + d;
+        }
+      }
+    }
+    ```
+    优化前:
+    ```llvm
+    define void @main() {
+      label_entry:
+        %op4 = call i32 @input()
+        %op5 = call i32 @input()
+        br label %label6
+      label6:                                                ; preds = %label_entry, %label23
+        %op24 = phi i32 [ %op13, %label23 ], [ undef, %label_entry ]
+        %op25 = phi i32 [ %op27, %label23 ], [ undef, %label_entry ]
+        %op26 = phi i32 [ %op4, %label_entry ], [ %op28, %label23 ]
+        %op8 = icmp ne i32 %op26, 0
+        br i1 %op8, label %label9, label %label14
+      label9:                                                ; preds = %label6
+        %op12 = add i32 %op26, %op5
+        %op13 = call i32 @input()
+        br label %label15
+      label14:                                                ; preds = %label6
+        ret void
+      label15:                                                ; preds = %label9, %label18
+        %op27 = phi i32 [ %op12, %label9 ], [ %op22, %label18 ]
+        %op28 = phi i32 [ %op26, %label9 ], [ %op19, %label18 ]
+        %op17 = icmp ne i32 %op13, 0
+        br i1 %op17, label %label18, label %label23
+      label18:                                                ; preds = %label15
+        %op19 = call i32 @input()
+        %op22 = add i32 %op5, %op13
+        br label %label15
+      label23:                                                ; preds = %label15
+        br label %label6
+      }
+    ```
+    优化后
+    ```llvm
+    define void @main() {
+      label_entry:
+        %op4 = call i32 @input()
+        %op5 = call i32 @input()
+        br label %label6
+      label6:                                                ; preds = %label_entry, %label23
+        %op24 = phi i32 [ %op13, %label23 ], [ undef, %label_entry ]
+        %op25 = phi i32 [ %op27, %label23 ], [ undef, %label_entry ]
+        %op26 = phi i32 [ %op4, %label_entry ], [ %op28, %label23 ]
+        %op8 = icmp ne i32 %op26, 0
+        br i1 %op8, label %label9, label %label14
+      label9:                                                ; preds = %label6
+        %op12 = add i32 %op26, %op5   ; c = a + b没有外提，因为循环中他的值可能发生改变
+        %op13 = call i32 @input()
+        %op17 = icmp ne i32 %op13, 0  ; 对 while(d) 中是否为0的判断被外提
+        %op22 = add i32 %op5, %op13   ; c = b + d被外提
+        br label %label15
+      label14:                                                ; preds = %label6
+        ret void
+      label15:                                                ; preds = %label9, %label18
+        %op27 = phi i32 [ %op12, %label9 ], [ %op22, %label18 ]
+        %op28 = phi i32 [ %op26, %label9 ], [ %op19, %label18 ]
+        br i1 %op17, label %label18, label %label23
+      label18:                                                ; preds = %label15
+        %op19 = call i32 @input()
+        br label %label15
+      label23:                                                ; preds = %label15
+        br label %label6
+    }
+    ```
     
 * 活跃变量分析
 
@@ -206,7 +522,7 @@
 
 ### 实验总结
 
-此次实验有什么收获
+更加深刻的理解了常量传播与循环不变式外提的具体处理方法。学会了使用恰当的数据结构来处理关系。
 
 对于活跃变量的处理和块间控制流的转移有了更深刻的认识，对于c++应用，logging工具调试debug有了更深的掌握，锻炼了程序开发的大局观。
 
