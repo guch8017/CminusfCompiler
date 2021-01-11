@@ -10,6 +10,7 @@ class Inline : public Pass
 {
 private:
     static int opID;
+    std::set<Function *> recurFunction;
 public:
     Inline(Module *m) : Pass(m){}
     ~Inline(){};

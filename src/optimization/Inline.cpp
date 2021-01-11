@@ -9,8 +9,16 @@ void Inline::callAnalysis(){
         for(BasicBlock* _bb: _func->get_basic_blocks()){
             count += _bb->get_instructions().size();
             for(Instruction* instr: _bb->get_instructions()){
-                if(instr->is_call() && !dynamic_cast<Function*>(instr->get_operand(0))->is_declaration())
-                    callInstrHotSpot.push_back({_func, _bb, dynamic_cast<CallInst*>(instr), 1});
+                if(instr->is_call() && !dynamic_cast<Function*>(instr->get_operand(0))->is_declaration()){
+                    if(recurFunction.find(dynamic_cast<Function*>(instr->get_operand(0))) != recurFunction.end()){
+                        continue;
+                    }
+                    if(instr->get_operand(0) == _func){
+                        recurFunction.insert(_func);
+                    }else{
+                        callInstrHotSpot.push_back({_func, _bb, dynamic_cast<CallInst*>(instr), 1});
+                    }
+                }
             }
         }
         
@@ -20,6 +28,8 @@ void Inline::callAnalysis(){
 BasicBlock* Inline::splitBasicBlock(BasicBlock* targetBB, CallInst* inst){
     // 抽取函数指针
     Function*  func = targetBB->get_parent();
+    // 跳过递归
+    if(func == inst->get_operand(0)) return nullptr;
     // 新的跳转块
     BasicBlock* newBB = BasicBlock::create(func->get_parent(), getName(), func);
     // 获取插入点
@@ -63,6 +73,7 @@ BasicBlock* Inline::splitBasicBlock(BasicBlock* targetBB, CallInst* inst){
 }
 
 BasicBlock* Inline::transplant(Function* func, Function* target, BasicBlock* entry, BasicBlock* exit_, CallInst* caller){
+    if(func == target) return nullptr;
     std::map<Value*, Value*> pointerMap;
     // 建立新旧基本块映射
     for(BasicBlock* _oriBB: func->get_basic_blocks()){
