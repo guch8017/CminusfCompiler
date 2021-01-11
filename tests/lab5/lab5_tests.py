@@ -39,7 +39,7 @@ def compile_baseline_files(file_lists):
     exec_files = list()
     for each in file_lists:
         exec_file,_=os.path.splitext(each)
-        COMMAND = "clang -O0 -w " + each + " -o " + exec_file + " -L. -lcminus_io"
+        COMMAND = "clang -O0 -w " + each + " -o " + exec_file + " -L/usr/local/lib/ -lcminus_io"
         try:
             result = subprocess.run(COMMAND, stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True,timeout=1)
             if result.returncode == 0:

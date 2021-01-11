@@ -13,6 +13,10 @@ struct Use
     Value *val_;
     unsigned arg_no_;     // the no. of operand, e.g., func(a, b), a is 0, b is 1
     Use(Value *val, unsigned no) : val_(val), arg_no_(no) {}
+
+    friend bool operator==(const Use & lhs, const Use & rhs){
+        return lhs.val_ == rhs.val_ && lhs.arg_no_ == rhs.arg_no_;
+    }
 };
 
 class Value

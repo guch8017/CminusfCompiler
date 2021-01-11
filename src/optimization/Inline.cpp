@@ -48,6 +48,17 @@ BasicBlock* Inline::splitBasicBlock(BasicBlock* targetBB, CallInst* inst){
     BasicBlock* inlineEntryBlock = transplant(dynamic_cast<Function*>(inst->get_operand(0)), func, targetBB, newBB, inst);
     // 插入跳转
     BranchInst::create_br(inlineEntryBlock, targetBB);
+    std::vector<Use> utbd;
+    for(Use use: targetBB->get_use_list()){
+        // 替换所有Phi指令
+        if(dynamic_cast<PhiInst*>(use.val_)){
+            dynamic_cast<PhiInst*>(use.val_)->get_operands()[use.arg_no_] = newBB;
+            newBB->add_use(use.val_, use.arg_no_);
+            utbd.push_back(use);
+        }
+    }
+    for(Use use: utbd)
+        targetBB->get_use_list().remove(use);
     return newBB;
 }
 
@@ -110,7 +121,12 @@ BasicBlock* Inline::transplant(Function* func, Function* target, BasicBlock* ent
     {
         // 替换所有调用者
         for(auto u: (*callee)->get_use_list()){
-            User* uu = dynamic_cast<User*>(pointerMap[u.val_]);
+            User* uu;
+            if(pointerMap.find(u.val_) == pointerMap.end()){
+                printf("[W] Can't find Use for [%d]%x\n", u.arg_no_, u.val_);
+                uu = dynamic_cast<User*>(u.val_);
+            }else
+                uu = dynamic_cast<User*>(pointerMap[u.val_]);
             if(uu != nullptr)
                 uu->set_operand(u.arg_no_, *pit);
         }
